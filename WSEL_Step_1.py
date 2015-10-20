@@ -132,9 +132,8 @@ class WSEL_Step_1:
     def processStream(self):
         all_streams = self.streams
         env.overwriteOutput = True        
-        for streams in all_streams:
-            sep = '_'
-            name = streams.split(sep, 1)[0]
+        for streams in all_streams:            
+            name = streams
             print("Starting "+name)
             stream = self.streams_dataset+"\\"+name+"_stream_feature"
             xs = self.xs_dataset+'\\'+ name+'_xs'            

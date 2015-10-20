@@ -148,7 +148,7 @@ def CopyWorkspace(setup):
          if os.path.isfile(stream_loc) and os.path.isfile(xs_original_loc) and os.path.isfile(boundary_loc):
             print("Copying "+name+" data into file geodatabase")
             stream_count=stream_count+1
-            job_config['stream_names'].append(name+"_stream_feature")
+            job_config['stream_names'].append(name)
             arcpy.FeatureToLine_management(xs_original_loc, xs_original+"/"+name+"_xs")            
             arcpy.FeatureToLine_management(stream_loc,streams_original+"/"+name+"_stream_feature")            
             arcpy.FeatureToPolygon_management(boundary_loc,flood_original+"/"+name+"_flood_boundary")

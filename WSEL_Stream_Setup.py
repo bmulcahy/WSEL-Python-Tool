@@ -27,9 +27,8 @@ class WSEL_Stream_Setup:
         return self
 
     def processStream(self):        
-        for stream in self.streams:
-            sep = '_'
-            name = stream.split(sep, 1)[0]
+        for stream in self.streams:            
+            name = stream
             print("Starting stream "+name)            
             stream =arcpy.CopyFeatures_management(self.streams_original+"\\"+name+"_stream_feature", self.streams_dataset+"\\"+name+"_stream_feature" )
             arcpy.AddField_management(stream, "length", "DOUBLE")

@@ -32,27 +32,26 @@ class WSEL_Intersects_Clean:
     def remove_duplicate_pts(self, stream_intersects):
         #print("Removing duplicate intersection points keeping ones with higher WSEL")
         tempLayer = "intersectLayer"
-        expression = """ "StrmName_1"='Delete' """
-        fieldName = "Intersects"
-        expression2 = "[StrmName]"
-        expression3 = "[StrmName_1]"
+        expression = """ "Route_ID_1"='Delete' """        
+        expression2 = "[Route_ID]"
+        expression3 = "[Route_ID_1]"
         expression4 = "[POINT_M]"
-        keep_fields=['SHAPE', 'OBJECTID', 'StrmName', 'Intersects','WSEL', 'Section','length']
+        keep_fields=['SHAPE', 'OBJECTID', 'Route_ID', 'Intersects','WSEL', 'Section','length']
         comb_intersect = stream_intersects
         compare =[]
         fields = [f.name for f in arcpy.ListFields(comb_intersect)]       
 
-        cursor = arcpy.SearchCursor(comb_intersect, ['StrmName','StrmName_1','length'])        
+        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1','length'])        
         for row in cursor:            
-            compare.append([row.getValue('StrmName'),row.getValue('StrmName_1'),row.getValue('length')])
+            compare.append([row.getValue('Route_ID'),row.getValue('Route_ID_1'),row.getValue('length')])
         del row
         del cursor      
         
 
-        cursor = arcpy.UpdateCursor(comb_intersect,['StrmName','StrmName_1','length'])
+        cursor = arcpy.UpdateCursor(comb_intersect,['Route_ID','Route_ID_1','length'])
         for row in cursor:
-            intersect = row.getValue('StrmName_1')
-            intersect_stream = row.getValue('StrmName')
+            intersect = row.getValue('Route_ID_1')
+            intersect_stream = row.getValue('Route_ID')
             intersect_length = int(row.getValue('length'))    
             
                        
@@ -61,14 +60,14 @@ class WSEL_Intersects_Clean:
                 stream_name = strm[0]                
                 stream_length = int(strm[2])
                 if intersect == stream_name and intersect_stream == stream and intersect_length < stream_length:
-                    row.setValue("StrmName_1","Delete")
+                    row.setValue("Route_ID_1","Delete")
                     cursor.updateRow(row)
         del row
         del cursor
         arcpy.AddField_management(comb_intersect,fieldName,"TEXT","","",254)
         arcpy.AddField_management(comb_intersect,'Section',"DOUBLE")
-        arcpy.CalculateField_management(comb_intersect, fieldName, expression2, "VB")
-        arcpy.CalculateField_management(comb_intersect, "StrmName", expression3, "VB")
+        arcpy.CalculateField_management(comb_intersect, "Intersects", expression2, "VB")
+        arcpy.CalculateField_management(comb_intersect, "Route_ID", expression3, "VB")
         arcpy.CalculateField_management(comb_intersect, "Section", expression4, "VB")
         arcpy.MakeFeatureLayer_management(comb_intersect, tempLayer)
         arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION",expression)

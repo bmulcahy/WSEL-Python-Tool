@@ -98,9 +98,8 @@ class WSEL_XS_Check:
 
     def processStream(self):
         self.warnings=[]
-        for stream in self.streams:
-            sep = '_'
-            name = stream.split(sep, 1)[0]
+        for stream in self.streams:            
+            name = stream
             #print("Starting stream "+name)
             xs = arcpy.FeatureToLine_management(self.xs_original+"\\"+name+"_xs", self.xs_dataset+"\\"+name+"_xs")
             warning = self.xs_check(xs, name)
