@@ -35,7 +35,7 @@ def Script_setup(check, scriptlocation, r):
       rootdir = "C:/Users/bmulcahy/External/Projects/Tools/wsel/script/redo/redo_data"
       sr="WGS 1984 UTM Zone 14N"
    
-   scratch = os.path.join(scriptlocation,projectname+"_1"+wsel_field)
+   scratch = os.path.join(scriptlocation,"test\\"+projectname+"_1"+wsel_field)
    if not os.path.exists(scratch):
       os.makedirs(scratch)
    configfile = os.path.join(scratch,"config.cfg")

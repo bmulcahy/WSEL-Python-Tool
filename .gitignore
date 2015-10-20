@@ -14,6 +14,9 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
+#Compiled Python files
+*.pyc
+
 # Windows shortcuts
 *.lnk
 
