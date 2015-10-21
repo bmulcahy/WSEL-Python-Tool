@@ -3,7 +3,7 @@ import sys, os, re, arcpy, traceback
 from arcpy import env
 from arcpy.sa import *
 ### Created by Brian Mulcahy##
-class WSEL_Step_1:
+class WSEL_Step_4:
     
     def __init__(self, config, streams):
         self.streams = streams
@@ -25,6 +25,7 @@ class WSEL_Step_1:
         self.streams_dataset = self.config['streams_dataset']
         self.vertices_dataset = self.config['vertices_dataset']
         self.streams_zm =self.config['streams_zm']
+        self.backwater =self.config['backwater']
         self.sr = self.config['sr']        
         env.workspace = self.scratch
         env.parallelProcessingFactor = "4"
@@ -54,7 +55,7 @@ class WSEL_Step_1:
         
         if status == 0:
             print("Adding Z-values to Polyline ZM")
-            mfield="WSEL"            
+            mfield="WSEL_REG"
             pts = xs_pt
         if status == 1:
             print("Adding M-values to Polyline ZM")
@@ -72,7 +73,7 @@ class WSEL_Step_1:
         route_evt_layer_temp =name+"_evt_lyr"
         route_evt_layer= self.scratch+"\\"+name+"_evt"
         props = "RID POINT MEAS"
-        out_table =self.table_folder+"\\route_loc.dbf"
+        out_table =self.table_folder+"\\route_loc"
 
         route_meas = arcpy.CreateRoutes_lr(rts, rid, out_routes,"LENGTH", "#", "#", "UPPER_LEFT",1,0,"IGNORE", "INDEX")        
         loc_features = arcpy.LocateFeaturesAlongRoutes_lr(pts, route_meas, rid, "0", out_table, props, 'FIRST', 'NO_DISTANCE','NO_ZERO','FIELDS')
@@ -95,7 +96,8 @@ class WSEL_Step_1:
         keep_fields = [f.name for f in arcpy.ListFields(xs_pt)]
         fieldName = "XS_Station"
         fieldName2 = "OBJECTID"                
-        sqlExp = "{0} = {1}".format(fieldName, min_station)    
+        sqlExp = "{0} = {1}".format(fieldName, min_station)
+        sqlExp2 = "'{0}'".format(name)  
         arcpy.MakeFeatureLayer_management(xs_pt, tempLayer)
         arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION", sqlExp)        
         pts = arcpy.FeatureVerticesToPoints_management(stream, self.vertices_dataset+'/'+name+"_endpts","BOTH_ENDS")
@@ -103,16 +105,18 @@ class WSEL_Step_1:
         arcpy.Delete_management(pts)
         arcpy.Near_analysis(tempLayer, stream_startend)
         start_oid =[r[0] for r in arcpy.da.SearchCursor (xs_pt,("NEAR_FID"),where_clause=sqlExp)][0]        
-        sqlExp2 = "{0} <> {1}".format(fieldName2, start_oid)
+        sqlExp3 = "{0} <> {1}".format(fieldName2, start_oid)
         arcpy.MakeFeatureLayer_management(stream_startend, temp_pt_Layer)
-        arcpy.SelectLayerByAttribute_management(temp_pt_Layer, "NEW_SELECTION", sqlExp2)
+        arcpy.SelectLayerByAttribute_management(temp_pt_Layer, "NEW_SELECTION", sqlExp3)
         if int(arcpy.GetCount_management(temp_pt_Layer).getOutput(0)) > 0:
             arcpy.DeleteFeatures_management(temp_pt_Layer)
         arcpy.AddField_management(stream_startend,'XS_Station',"FLOAT")        
         arcpy.CalculateField_management(stream_startend, 'XS_Station', 0, "VB")
-        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("XS_Station","Shape@XY","Shape@Z","Shape@M"))]      
+        arcpy.AddField_management(stream_startend,'Route_ID',"TEXT","","",50)        
+        arcpy.CalculateField_management(stream_startend, 'Route_ID', sqlExp2, "PYTHON")
+        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))]      
         
-        cursor = arcpy.da.InsertCursor(xs_pt, ("XS_Station","Shape@XY","Shape@Z","Shape@M"))
+        cursor = arcpy.da.InsertCursor(xs_pt, ("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))
 
         for row in stream_start:
             cursor.insertRow(row)

@@ -24,7 +24,7 @@ This script requires both the spatial and 3D analyst licenses.
 
 
 ###### TODO:
-
+- create config process
 - expand on multiprocessor options
 - add toggle for backwater adjustments
 - Catch arcgis specific exceptions

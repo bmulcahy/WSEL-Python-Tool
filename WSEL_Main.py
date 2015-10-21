@@ -7,8 +7,8 @@ from WSEL_Intersects import *
 from WSEL_Intersects_Clean import *
 from WSEL_Step_1 import *
 from WSEL_Step_2 import *
-#from WSEL_Step_3 import *
-#from WSEL_Step_4 import *
+from WSEL_Step_3 import *
+from WSEL_Step_4 import *
 #from WSEL_Step_5 import *
 from arcpy import env
 
@@ -24,18 +24,18 @@ def Script_setup(check, scriptlocation, r):
       rootdir = arcpy.GetParameterAsText(4)
       sr=arcpy.GetParameterAsText(5)
    else:      
-      multiproc = True
+      multiproc = False
       proc = 4
-      main_stream = "CottonwoodRiver"
+      main_stream = "NortonCreek"
       rid_field="StrmName"
       wsel_field = r
       station_field ="Section"
       backwater = True
       projectname = "LowerCottonwood"
-      rootdir = "C:/Users/bmulcahy/External/Projects/Tools/wsel/script/redo/redo_data"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing"
       sr="WGS 1984 UTM Zone 14N"
    
-   scratch = os.path.join(scriptlocation,"test\\"+projectname+"_1"+wsel_field)
+   scratch = os.path.join(scriptlocation,"output\\"+projectname+"_1"+wsel_field)
    if not os.path.exists(scratch):
       os.makedirs(scratch)
    configfile = os.path.join(scratch,"config.cfg")
@@ -186,6 +186,7 @@ def ScratchWorkspace(setup, multi,stream_count, job_config, proc):
    wsel_field = setup['wsel_field']
    station_field = setup['station_field']
    rid_field = setup['rid_field']
+   backwater = setup['backwater']
    
    if stream_count < proc:
       proc = stream_count
@@ -239,7 +240,7 @@ def ScratchWorkspace(setup, multi,stream_count, job_config, proc):
          else:
             arcpy.DeleteRasterCatalogItems_management(raster_catalog)
          
-         job_config['config'].append({'rid_field': rid_field,'finalgdb': finalgdb,'streams_final': streams_final,'flood_final':flood_final,'xs_final':xs_final,'wsel_field': wsel_field, 'station_field': station_field,'table_folder':tablefolder,'tin_folder':tin_folder,'configfile': configfile,'streams_zm':streams_zm, 'scratch': scratchproc,'sr': sr,'originalgdb': originalgdb, 'scratchgdb':scratchgdb,'finalgdb':finalgdb,'output_workspace':output_workspace,'raster_catalog':raster_catalog,'streams_dataset':streams_dataset,'streams_intersect_dataset':streams_intersect_dataset,'xs_intersect_dataset':xs_intersect_dataset,'vertices_dataset':vertices_dataset,'routes_dataset':routes_dataset,'xs_dataset':xs_dataset,'streams_original':streams_original,'xs_original':xs_original,'flood_original':flood_original})
+         job_config['config'].append({'backwater': backwater,'rid_field': rid_field,'finalgdb': finalgdb,'streams_final': streams_final,'flood_final':flood_final,'xs_final':xs_final,'wsel_field': wsel_field, 'station_field': station_field,'table_folder':tablefolder,'tin_folder':tin_folder,'configfile': configfile,'streams_zm':streams_zm, 'scratch': scratchproc,'sr': sr,'originalgdb': originalgdb, 'scratchgdb':scratchgdb,'finalgdb':finalgdb,'output_workspace':output_workspace,'raster_catalog':raster_catalog,'streams_dataset':streams_dataset,'streams_intersect_dataset':streams_intersect_dataset,'xs_intersect_dataset':xs_intersect_dataset,'vertices_dataset':vertices_dataset,'routes_dataset':routes_dataset,'xs_dataset':xs_dataset,'streams_original':streams_original,'xs_original':xs_original,'flood_original':flood_original})
          
    else:
       scratchgdb = os.path.join(scratch,"Scratch.gdb")
@@ -281,7 +282,7 @@ def ScratchWorkspace(setup, multi,stream_count, job_config, proc):
          arcpy.CreateRasterCatalog_management(finalgdb, projectname)
       else:
          arcpy.DeleteRasterCatalogItems_management(raster_catalog)
-      job_config['config'].append({'rid_field': rid_field,'finalgdb': finalgdb,'streams_final': streams_final,'flood_final':flood_final,'xs_final':xs_final,'wsel_field': wsel_field, 'station_field': station_field,'table_folder':tablefolder,'tin_folder':tin_folder,'configfile': configfile,'streams_zm':streams_zm,'scratch':scratch,'sr':sr, 'originalgdb': originalgdb, 'scratchgdb':scratchgdb,'finalgdb':finalgdb,'output_workspace':output_workspace,'raster_catalog':raster_catalog,'streams_dataset':streams_dataset,'streams_intersect_dataset':streams_intersect_dataset,'xs_intersect_dataset':xs_intersect_dataset,'vertices_dataset':vertices_dataset,'routes_dataset':routes_dataset,'xs_dataset':xs_dataset,'streams_original':streams_original,'xs_original':xs_original,'flood_original':flood_original})
+      job_config['config'].append({'backwater': backwater,'rid_field': rid_field,'finalgdb': finalgdb,'streams_final': streams_final,'flood_final':flood_final,'xs_final':xs_final,'wsel_field': wsel_field, 'station_field': station_field,'table_folder':tablefolder,'tin_folder':tin_folder,'configfile': configfile,'streams_zm':streams_zm,'scratch':scratch,'sr':sr, 'originalgdb': originalgdb, 'scratchgdb':scratchgdb,'finalgdb':finalgdb,'output_workspace':output_workspace,'raster_catalog':raster_catalog,'streams_dataset':streams_dataset,'streams_intersect_dataset':streams_intersect_dataset,'xs_intersect_dataset':xs_intersect_dataset,'vertices_dataset':vertices_dataset,'routes_dataset':routes_dataset,'xs_dataset':xs_dataset,'streams_original':streams_original,'xs_original':xs_original,'flood_original':flood_original})
    print_to_log(setup,"Proc",proc)
    print_to_config(setup,"Proc",proc)
    print_to_config(setup,"JobConfig",job_config)  
@@ -294,10 +295,7 @@ def WSEL_XSCheck(streamJobs):
    stream_names = streamJobs['stream_names']   
    with WSEL_XS_Check(config,stream_names) as wsel_XS_Check:
       result=wsel_XS_Check.processStream()
-      if not result:
-         return
-      else:
-         return result
+      return result
       
 def WSEL_StreamSetup(streamJobs):   
    config=streamJobs['config']
@@ -412,10 +410,10 @@ def stream_order(setup,job_config):
    stream_initdict ={}
    intersectList=[]
    strmList=[]
-   main=setup['main_stream'] #Add to configfile
+   main=setup['main_stream'] 
    scratchgdb_loc = job_config['config'][0]['scratchgdb']
    intersect_table = scratchgdb_loc+'\\streams_intersect_all_1'   
-   strmList_raw=[r for r in arcpy.da.SearchCursor(intersect_table, ['StrmName','Intersects','length'])]
+   strmList_raw=[r for r in arcpy.da.SearchCursor(intersect_table, ['Route_ID','Intersects','strm_length'])]
    for r in strmList_raw:
       strmList.append([r[0],r[1]])
       intersectList.append(r[1])                   
@@ -429,21 +427,17 @@ def stream_order(setup,job_config):
       stream_initdict[strm[1]].append(strm[0])
 
    main_strm =stream_initdict.pop(main)
-   
-
-
-   stream_dict=merge({main: main_strm},stream_initdict,main_strm, main) 
-   
+   stream_dict=merge({main: main_strm},stream_initdict,main_strm, main)   
    stream_order = flatten_stream(stream_dict, list([]))
    
    return stream_order
 
-def getConfig(stream,streamJobs,procs):   
+def getConfig(stream,streamJobs,procs):
    for i in range(0, procs):
       if stream in streamJobs[i]['stream_names']:
          return i
-      else:
-         continue
+   
+      
       
    
 def finalize_data(setup,multi,job_config,proc):   
@@ -474,6 +468,7 @@ def finalize_data(setup,multi,job_config,proc):
       xs = arcpy.ListFeatureClasses()      
       for name in xs:
          arcpy.CopyFeatures_management(name,xs_final+'\\'+name)  
+   print_to_config(setup,"finalize_data",True)  
    print("Data moved to Final Geodatabase")
    
 def StreamJobs(config,multi,procs):
@@ -519,8 +514,7 @@ def StreamJobs(config,multi,procs):
 def MergeStreams(setup,job_config,multi, proc, run):
    print("Merging Streams")
    multiproc = multi
-   stream_list =[]
-   
+   stream_list =[]   
    if multiproc == True:
       for p in range(proc):
          if run == 1:
@@ -542,14 +536,13 @@ def MergeStreams(setup,job_config,multi, proc, run):
          comb_streams = arcpy.Merge_management(stream_list, "streams_all")
    else:
       if run == 1:
-         stream_loc = job_config['config'][p]['streams_dataset']
+         stream_loc = job_config['config'][0]['streams_dataset']
       else:
-         stream_loc = job_config['config'][p]['routes_dataset']
-      stream_loc = job_config['config'][0]['routes_dataset']
+         stream_loc = job_config['config'][0]['routes_dataset']      
       scratchgdb_loc = job_config['config'][0]['scratchgdb']
       env.workspace = stream_loc
       env.overwriteOutput = True
-      streams = arcpy.ListFeatureClasses()
+      streams = arcpy.ListFeatureClasses()      
       env.workspace = scratchgdb_loc
       env.overwriteOutput = True
       comb_streams = arcpy.Merge_management(streams, "streams_all")     
@@ -605,6 +598,7 @@ def comb_raster(setup,multi,job_config,proc):
       raster_cat = job_config['config'][0]['raster_catalog']
       arcpy.WorkspaceToRasterCatalog_management(raster_loc, raster_cat,"INCLUDE_SUBDIRECTORIES","PROJECT_ONFLY")
       arcpy.RasterCatalogToRasterDataset_management(raster_cat,os.path.join(final,"LowerCottonwood.tif"),"", "MAXIMUM", "FIRST","", "", "32_BIT_FLOAT")
+   print_to_config(setup,"comb_raster",True) 
    print("All water surface elevations rasters have been created")
 
 def XSCheck(setup,proc,multi,streamJobs):
@@ -630,7 +624,7 @@ def XSCheck(setup,proc,multi,streamJobs):
       result=WSEL_XSCheck(streamJobs[0])
       if result != None:
          error = error +1
-         warning.update(result[0])
+         warning.update(result)
    
    print("XS have been checked")
    if error >0:
@@ -686,7 +680,33 @@ def IntersectsClean(setup,proc,multi,streamJobs):
    print("Stream Intersects Clean completed")
    print_to_log(setup,"IntersectsClean","Complete")
    print_to_config(setup,"IntersectsClean",True)
-   
+
+def Intersects_delete(setup,job_config,multi,proc):
+   stream_intersect =[]
+   multiproc = multi   
+   print("Deleting Initial Stream Intersects")
+   if multiproc == True:
+      for p in range(proc):         
+         stream_loc = job_config['config'][p]['streams_intersect_dataset']
+         scratchgdb_loc = job_config['config'][p]['scratchgdb']
+         env.workspace = stream_loc
+         streams = arcpy.ListFeatureClasses()
+         env.workspace = scratchgdb_loc
+         for fc in streams:
+            arcpy.Delete_management(fc)      
+   else:
+      stream_loc = job_config['config'][0]['streams_intersect_dataset']
+      scratchgdb_loc = job_config['config'][0]['scratchgdb']
+      env.workspace = stream_loc
+      streams = arcpy.ListFeatureClasses()
+      env.workspace = scratchgdb_loc
+      for fc in streams:
+         arcpy.Delete_management(fc)      
+   print_to_log(setup,"IntersectsDelete","Complete")
+   print_to_config(setup,"IntersectsDelete",True)
+   print("Initial Intersects deletion completed")
+   return
+
 def Step1(setup,proc,multi,streamJobs):
    if multi == True:          
       print("Beginning Step 1 using multiprocesser module")
@@ -867,42 +887,66 @@ def main(config):
             i=i+1      
       if config['StreamSetup']== False:
          StreamSetup(setup,proc,multi,streamJobs)
-      if config['MergeStreams_1'] == False:
-         MergeStreams(setup,job_config,multi,proc,1)      
-      if config['Intersects']== False:
-         IntersectJob(setup,proc,multi,streamJobs)      
-      if config['MergeIntersects_1'] == False:
-         MergeIntersects(setup,job_config,multi,proc, 1)           
-      if config['IntersectsClean'] == False:
-         IntersectsClean(setup,proc,multi,streamJobs)
       if config['XSCheck']== False:
-         XSCheck(setup,proc,multi,streamJobs)
-      return
-      stream_list = stream_order(setup,job_config)
-      list_length = len(stream_list)
-      i=0
-      for streamname in stream_list:
-         print("Processing "+streamname+" "+str(i)+" out of "+str(list_length)+" streams completed")  
-         stream = streamname+"_stream_feature"
-         loc = getConfig(stream,streamJobs,proc)
-         single_config =[{'stream_names':[stream],'config':streamJobs[loc]['config']}]                
-         Step1(setup,proc,multi,single_config)         
-         MergeStreams(setup,job_config,multi,proc,2)         
-         Step2(setup,proc,multi,single_config)      
-         MergeIntersects(setup,job_config,multi,proc,2)
-         return
-         #Step3(setup,proc,multi,single_config)
-         #Step4(setup,proc,multi,single_config)
-         #Step5(setup,proc,multi,single_config)  
+         XSCheck(setup,proc,multi,streamJobs)      
+
+      if setup['backwater']== True:
+         if config['MergeStreams_1'] == False:
+            MergeStreams(setup,job_config,multi,proc,1)      
+         if config['Intersects']== False:
+            IntersectJob(setup,proc,multi,streamJobs)      
+         if config['MergeIntersects_1'] == False:
+            MergeIntersects(setup,job_config,multi,proc, 1)           
+         if config['IntersectsClean'] == False:
+            IntersectsClean(setup,proc,multi,streamJobs)
+         if 'stream_list' not in config:
+            stream_list = stream_order(setup,job_config)
+            print_to_config(setup,'stream_list',stream_list)
+         else:
+            stream_list =config['stream_list']
          
-         i=i+1
+         list_length = len(stream_list)
+         i=0
+         if 'IntersectsDelete' in config and 'IntersectsDelete'!=True:
+            Intersects_delete(setup,job_config,multi,proc)
+         if 'IntersectsDelete' not in config:
+            Intersects_delete(setup,job_config,multi,proc)
+            
+         completed_streams =[]
+         
+         for streamname in stream_list:
+            if streamname not in config:
+               print("Processing "+streamname+" "+str(i)+" out of "+str(list_length)+" streams completed")               
+               completed_streams.append(streamname)
+               stream = streamname
+               if multi != False:
+                  loc = getConfig(stream,streamJobs,proc)
+               else:
+                  loc = 0
+               single_config =[{'stream_names':[stream],'config':streamJobs[loc]['config'], 'completed': completed_streams}]                
+               Step1(setup,proc,multi,single_config)         
+               MergeStreams(setup,job_config,multi,proc,2)
+               return
+               Step2(setup,proc,multi,single_config)               
+               MergeIntersects(setup,job_config,multi,proc,2)
+               Step3(setup,proc,multi,single_config)               
+               Step4(setup,proc,multi,single_config)                
+               #print_to_config(setup,streamname,True)
+            i=i+1
+      else:
+         if config['Step4'] == False:
+            Step4(setup,proc,multi,streamJobs)      
+
+      #if config['Step5'] == False:
+         #Step5(setup,proc,multi,streamJobs)
          
          
       return
             
-       
-      finalize_data(setup,multi,job_config,proc)
-      comb_raster(setup,multi,job_config,proc)
+      if 'finalize_data' not in config:
+         finalize_data(setup,multi,job_config,proc)
+      if 'comb_raster' not in config:
+         comb_raster(setup,multi,job_config,proc)
       print_to_log(setup,"End Time", time.strftime("%c"))
    except:
       logging.exception(" Error:")
@@ -927,7 +971,8 @@ if __name__ == "__main__":
          raise LicenseError("Spatial Analyst")
       runs =["WSE"]
       sl = os.path.abspath(os.path.dirname(sys.argv[0]))
-      for r in runs:
+
+      for r in runs:         
          print("Running script for "+r)
          configfile =''
          setup = Script_setup(False,sl, r)
@@ -942,7 +987,11 @@ if __name__ == "__main__":
                      config.update(cPickle.load(f))
                   except EOFError:
                      break
-         main(config)
+         if r in config and r!=True:
+            main(config)
+         if r not in config:
+            main(config)
+         #print_to_config(config['Setup'],r,True)
        
    except LicenseError, arg:
       print(arg.msg+" license is not available.")

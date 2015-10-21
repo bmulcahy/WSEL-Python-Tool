@@ -36,23 +36,23 @@ class WSEL_Intersects_Clean:
         expression2 = "[Route_ID]"
         expression3 = "[Route_ID_1]"
         expression4 = "[POINT_M]"
-        keep_fields=['SHAPE', 'OBJECTID', 'Route_ID', 'Intersects','WSEL', 'Section','length']
+        keep_fields=['SHAPE', 'OBJECTID', 'Route_ID', 'Intersects','WSEL', 'Station','strm_length']
         comb_intersect = stream_intersects
         compare =[]
         fields = [f.name for f in arcpy.ListFields(comb_intersect)]       
 
-        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1','length'])        
+        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1','strm_length'])        
         for row in cursor:            
-            compare.append([row.getValue('Route_ID'),row.getValue('Route_ID_1'),row.getValue('length')])
+            compare.append([row.getValue('Route_ID'),row.getValue('Route_ID_1'),row.getValue('strm_length')])
         del row
         del cursor      
         
 
-        cursor = arcpy.UpdateCursor(comb_intersect,['Route_ID','Route_ID_1','length'])
+        cursor = arcpy.UpdateCursor(comb_intersect,['Route_ID','Route_ID_1','strm_length'])
         for row in cursor:
             intersect = row.getValue('Route_ID_1')
             intersect_stream = row.getValue('Route_ID')
-            intersect_length = int(row.getValue('length'))    
+            intersect_length = int(row.getValue('strm_length'))    
             
                        
             for strm in compare:
@@ -64,11 +64,11 @@ class WSEL_Intersects_Clean:
                     cursor.updateRow(row)
         del row
         del cursor
-        arcpy.AddField_management(comb_intersect,fieldName,"TEXT","","",254)
-        arcpy.AddField_management(comb_intersect,'Section',"DOUBLE")
+        arcpy.AddField_management(comb_intersect,"Intersects","TEXT","","",50)
+        arcpy.AddField_management(comb_intersect,'Station',"FLOAT",10,3)
         arcpy.CalculateField_management(comb_intersect, "Intersects", expression2, "VB")
         arcpy.CalculateField_management(comb_intersect, "Route_ID", expression3, "VB")
-        arcpy.CalculateField_management(comb_intersect, "Section", expression4, "VB")
+        arcpy.CalculateField_management(comb_intersect, "Station", expression4, "VB")
         arcpy.MakeFeatureLayer_management(comb_intersect, tempLayer)
         arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION",expression)
         if int(arcpy.GetCount_management(tempLayer).getOutput(0)) > 0:

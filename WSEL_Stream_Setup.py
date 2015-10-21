@@ -29,12 +29,13 @@ class WSEL_Stream_Setup:
     def processStream(self):        
         for stream in self.streams:            
             name = stream
-            print("Starting stream "+name)            
+            print("Configuring stream "+name)
+            expression = "'"+name+"'"            
             stream =arcpy.CopyFeatures_management(self.streams_original+"\\"+name+"_stream_feature", self.streams_dataset+"\\"+name+"_stream_feature" )
-            arcpy.AddField_management(stream, "length", "DOUBLE")
-            arcpy.CalculateField_management(stream, "length", "!SHAPE.LENGTH!","PYTHON_9.3")
-            arcpy.AddField_management(stream,'Route_ID',"TEXT","","",254)
-            arcpy.CalculateField_management(stream, 'Route_ID', name, "VB")
+            arcpy.AddField_management(stream, "strm_length", "FLOAT",10,3)
+            arcpy.CalculateField_management(stream, "strm_length", "float(!SHAPE.LENGTH!)","PYTHON")
+            arcpy.AddField_management(stream,"Route_ID","TEXT","","",50)
+            arcpy.CalculateField_management(stream,"Route_ID",expression,"PYTHON")
         return self.streams
         
         

@@ -62,10 +62,8 @@ class WSEL_Step_5:
     def processStream(self):
         all_streams = self.streams
         self.result =[]
-        for streams in all_streams:
-            sep = '_'
-            name = streams.split(sep, 1)[0]
-            name = streamstr[0]+'_'+streamstr[1]
+        for streams in all_streams:            
+            name = streams            
             print("Starting "+name)           
             stream_vertices = self.vertices_dataset+'/'+name+"_stream_vertices_feature"
             xs = self.xs_dataset+'/'+name+"_xs"

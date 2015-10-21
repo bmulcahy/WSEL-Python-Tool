@@ -1,0 +1,129 @@
+from __future__ import print_function
+import sys, os, re, arcpy
+from arcpy import env
+
+
+class WSEL_Step_3:
+    
+    def __init__(self, config):        
+        self.config = config
+
+    def __enter__(self):
+        self.scratchgdb = self.config['scratchgdb']
+        self.xs_original = self.config['xs_original']
+        self.xs_dataset = self.config['xs_dataset']
+        self.streams_original = self.config['streams_original']
+        self.xs_intersect_dataset = self.config['xs_intersect_dataset']
+        self.streams_intersect_dataset = self.config['streams_intersect_dataset']
+        self.routes_dataset = self.config['routes_dataset']
+        self.streams_dataset = self.config['streams_dataset']
+        self.vertices_dataset = self.config['vertices_dataset']
+        env.workspace = self.scratchgdb
+        env.overwriteOutput = True
+        env.MResolution = 0.0001
+        env.MDomain = "0 10000000"
+        env.outputMFlag = "Enabled"
+        env.outputZFlag = "Enabled"
+        return self
+
+    def __exit__(self, type, value, traceback):
+        return self.warnings
+
+    def remove_duplicate_pts(self, stream_intersects):
+        #print("Removing duplicate intersection points keeping ones with higher WSEL")
+        tempLayer = "intersectLayer"
+        expression = """ "Route_ID_1"='Delete' """
+        
+        expression2 = "[Route_ID]"
+        expression3 = "[Route_ID_1]"
+        expression4 = "[POINT_M]"
+        keep_fields=['Route_ID', 'Intersects','WSEL','XS_Section']
+        comb_intersect = stream_intersects
+        compare =[]
+
+        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1', 'Intersects','XS_Section', 'POINT_M'])
+       
+        for row in cursor:            
+            compare.append([row.getValue('Route_ID'),row.getValue('Route_ID_1'),row.getValue('WSEL'),row.getValue('XS_Section')])
+        del cursor
+
+        cursor = arcpy.UpdateCursor(comb_intersect, ['Route_ID_1', 'Route_ID','WSEL','XS_Section'])
+        for row in cursor:
+            intersect = row.getValue('Route_ID_1')
+            intersect_stream = row.getValue('Route_ID')
+            intersect_WSEL = row.getValue('WSEL')
+            intersect_Station = int(row.getValue('POINT_M'))
+            print(intersect_Station)
+            for strm in compare:
+                stream = strm[1]
+                stream_name = strm[0]
+                stream_WSEL = strm[2]
+                stream_Station = int(strm[3])
+                if intersect == stream_name and intersect_stream == stream and intersect_WSEL < stream_WSEL or intersect_Station < stream_Station :
+                    row.setValue("Route_ID_1","Delete")
+                    cursor.updateRow(row)        
+        del cursor
+        #arcpy.AddField_management(comb_intersect,'Intersects',"TEXT","","",50)
+        #arcpy.AddField_management(comb_intersect,'XS_Section',"FLOAT",10,3)
+        arcpy.CalculateField_management(comb_intersect, "Intersects", expression2, "VB")
+        arcpy.CalculateField_management(comb_intersect, "Route_ID", expression3, "VB")
+        arcpy.CalculateField_management(comb_intersect, "XS_Section", expression4, "VB")
+        arcpy.MakeFeatureLayer_management(comb_intersect, tempLayer)
+        arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION",expression)
+        if int(arcpy.GetCount_management(tempLayer).getOutput(0)) > 0:
+            arcpy.DeleteFeatures_management(tempLayer)
+        fields = [f.name for f in arcpy.ListFields(comb_intersect) if not f.required and f.name not in keep_fields ]
+        arcpy.DeleteField_management(comb_intersect, fields)
+        return
+
+    def update_xs(self, intersect_fc):
+        #print("Updating XS with backwater WSEL")
+        warning ={}
+        error = 0
+        env.workspace = self.xs_dataset
+        xs_array = arcpy.ListFeatureClasses()
+        cursor = arcpy.SearchCursor(intersect_fc, ['Route_ID', 'Intersects','WSEL','XS_Section'])
+        compare =[]
+        for row in cursor:
+            name = row.getValue('Route_ID')
+            intersect_stream = row.getValue('Intersects')
+            section = row.getValue('XS_Section')
+            if section != 0:
+                compare.append([name,row.getValue('WSEL'),section])
+            else:
+                error =error+1
+                intersection = {name:intersect_stream}
+                warning.update(intersection)
+                
+        
+        del cursor
+        
+        
+        for strm in compare:
+            xs_name= strm[0]+"_xs"
+            xs_WSEL= strm[1]           
+            if xs_name in xs_array:                
+                cursor = arcpy.UpdateCursor(xs_name, ['Route_ID','WSEL','WSEL_REG','Backwater'])
+                for row in cursor:
+                    original_wsel = row.getValue('WSEL')                    
+                    if original_wsel < xs_WSEL:
+                        row.setValue("WSEL_REG",xs_WSEL)
+                        row.setValue("Backwater","yes")
+                        cursor.updateRow(row)
+                
+                del cursor
+        env.workspace = self.scratchgdb
+        if error != 0:
+            return warning
+        else:
+            return 'null'
+
+    def processStream(self):
+        self.warnings=[]
+        comb_intersect = self.scratchgdb+'\\streams_intersect_all_2'
+        self.remove_duplicate_pts(comb_intersect)
+        warning = self.update_xs(comb_intersect)
+        if warning != 'null':
+            self.warnings.append(warning)
+        return self.warnings
+        

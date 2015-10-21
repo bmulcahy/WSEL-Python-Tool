@@ -36,37 +36,49 @@ class WSEL_Step_2:
         streams_intersect = []
         streamLayer="streamsAll"
         tempLayer = "streamLayer"
-        expression = """ "Route_ID" = "Route_ID_1" """        
-        fieldName = "WSEL"
+        expression = """ "Route_ID" = "Route_ID_1" """
+        keep_fields =['Route_ID', 'Route_ID_1','WSEL', 'POINT_M','Intersects','XS_Section']        
         expression2 = "[POINT_Z]"
+
+        expression4 = "[Route_ID]"
+        expression5 = "[Route_ID_1]"
+        expression6 = "[POINT_M]"
+        
         stream_array = [fc for fc in arcpy.ListFeatureClasses() if fc.endswith('_stream_routes')]
-        clusterTolerance = 2
+        
+        clusterTolerance = 0.01
         for stream in stream_array:
             sep = '_'
             name = stream.split(sep, 1)[0]
-            expression2 = """ "StrmName" <>"""+"'"+name+"'"
-            #print("Intersecting "+name)
+            expression3 = """ "Route_ID" <>"""+"'"+name+"'"
+            print("Intersecting "+name)
             arcpy.MakeFeatureLayer_management(comb_streams, streamLayer)
-            arcpy.SelectLayerByAttribute_management(streamLayer, "NEW_SELECTION",expression2)
+            arcpy.SelectLayerByAttribute_management(streamLayer, "NEW_SELECTION",expression3)
             outFeature = self.streams_intersect_dataset+"/"+name+'_pt_intersect'
             streams_intersect.append(outFeature)
             pt = arcpy.Intersect_analysis([stream,streamLayer], outFeature, "ALL", clusterTolerance, "POINT")
             arcpy.AddXY_management(pt)
-            arcpy.AddField_management(pt, fieldName, "DOUBLE")
-            arcpy.CalculateField_management(pt, fieldName, expression2, "VB")
+            arcpy.AddField_management(pt, "WSEL", "FLOAT",10,3)            
+            arcpy.AddField_management(pt,'Intersects',"TEXT","","",50)
+            arcpy.AddField_management(pt,'XS_Section',"FLOAT",10,3)
+            arcpy.CalculateField_management(pt, "WSEL", expression2, "VB")
+            arcpy.CalculateField_management(pt, "Intersects", expression4, "VB")
+            #arcpy.CalculateField_management(pt, "Route_ID", expression5, "VB")
+            arcpy.CalculateField_management(pt, "XS_Section", expression6, "VB")
+            fields = [f.name for f in arcpy.ListFields(pt) if not f.required and f.name not in keep_fields ]
+            arcpy.DeleteField_management(pt, fields)
             arcpy.MakeFeatureLayer_management(pt, tempLayer)
             arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION",expression)
-
             if int(arcpy.GetCount_management(tempLayer).getOutput(0)) > 0:
                 arcpy.DeleteFeatures_management(tempLayer)                
-        
+            
         env.workspace = scratchgdb
         return   
 
     def processStream(self):
         comb_streams = self.scratchgdb+'\\streams_all'
         streams_layer = arcpy.MakeFeatureLayer_management(comb_streams,"streams_lyr")
-        intersect=self.get_intersect_all(streams_layer)
-        return intersect
+        self.get_intersect_all(streams_layer)
+        return 
         
         
