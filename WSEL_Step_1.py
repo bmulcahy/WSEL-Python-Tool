@@ -25,9 +25,10 @@ class WSEL_Step_1:
         self.streams_dataset = self.config['streams_dataset']
         self.vertices_dataset = self.config['vertices_dataset']
         self.streams_zm =self.config['streams_zm']
-        self.sr = self.config['sr']        
+        self.sr = self.config['sr']
+        self.multi=self.config['multiproc']
         env.workspace = self.scratch
-        env.parallelProcessingFactor = "4"
+        #env.parallelProcessingFactor = "4"
         env.overwriteOutput = True
         env.MResolution = 0.0001
         env.MDomain = "0 10000000"
@@ -38,8 +39,13 @@ class WSEL_Step_1:
     def __exit__(self, type, value, traceback):
         return 
 
+    def print_out(self,text):
+        if self.multi == False:
+            print(text)
+            
+
     def get_intersection(self, stream, xs, name):
-        print("Getting Intersection between "+name+"'s Stream and XS files")
+        self.print_out("Getting Intersection between "+name+"'s Stream and XS files")
         inFeatures = [stream, xs]
         intersectOutput = self.xs_intersect_dataset+"/"+name+"_xs_pt"
         clusterTolerance = 0
@@ -53,17 +59,17 @@ class WSEL_Step_1:
         rid = "Route_ID"
         
         if status == 0:
-            print("Adding Z-values to Polyline ZM")
+            self.print_out("Adding Z-values to Polyline ZM")
             mfield="WSEL"            
             pts = xs_pt
         if status == 1:
-            print("Adding M-values to Polyline ZM")
+            self.print_out("Adding M-values to Polyline ZM")
             mfield ="XS_Station"
             #need to add 0 station at beginning of line if there is none because I am a nice guy
             stationList = [r[0] for r in arcpy.da.SearchCursor (xs_pt, [mfield])]
             min_station = min(stationList)
             if min_station > 0:
-                print("No Zero Station creating one before processing")
+                self.print_out("No Zero Station creating one before processing")
                 pts = self.add_zero_station(stream, xs_pt,min_station,name)           
         
         out_fc = self.routes_dataset+"/"+name+"_stream_routes"
@@ -104,9 +110,9 @@ class WSEL_Step_1:
         arcpy.Delete_management(pts)
         arcpy.Near_analysis(tempLayer, stream_startend)
         start_oid =[r[0] for r in arcpy.da.SearchCursor (xs_pt,("NEAR_FID"),where_clause=sqlExp)][0]        
-        sqlExp2 = "{0} <> {1}".format(fieldName2, start_oid)
+        sqlExp3 = "{0} <> {1}".format(fieldName2, start_oid)
         arcpy.MakeFeatureLayer_management(stream_startend, temp_pt_Layer)
-        arcpy.SelectLayerByAttribute_management(temp_pt_Layer, "NEW_SELECTION", sqlExp2)
+        arcpy.SelectLayerByAttribute_management(temp_pt_Layer, "NEW_SELECTION", sqlExp3)
         if int(arcpy.GetCount_management(temp_pt_Layer).getOutput(0)) > 0:
             arcpy.DeleteFeatures_management(temp_pt_Layer)
         arcpy.AddField_management(stream_startend,'XS_Station',"FLOAT")        
@@ -137,7 +143,7 @@ class WSEL_Step_1:
         env.overwriteOutput = True        
         for streams in all_streams:            
             name = streams
-            print("Starting "+name)
+            self.print_out("Starting "+name)
             stream = self.streams_dataset+"\\"+name+"_stream_feature"
             xs = self.xs_dataset+'\\'+ name+'_xs'            
             xs_intersect_pt = self.get_intersection(stream, xs, name)                       

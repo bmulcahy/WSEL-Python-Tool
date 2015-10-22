@@ -18,6 +18,7 @@ class WSEL_Intersects_Clean:
         self.routes_dataset = self.config['routes_dataset']
         self.streams_dataset = self.config['streams_dataset']
         self.vertices_dataset = self.config['vertices_dataset']
+        self.multi=self.config['multiproc']
         env.workspace = self.scratchgdb
         env.overwriteOutput = True
         env.MResolution = 0.0001
@@ -27,10 +28,14 @@ class WSEL_Intersects_Clean:
         return self
 
     def __exit__(self, type, value, traceback):
-        return 
+        return
+
+    def print_out(self,text):
+        if self.multi == False:
+            print(text)
 
     def remove_duplicate_pts(self, stream_intersects):
-        #print("Removing duplicate intersection points keeping ones with higher WSEL")
+        self.print_out("Removing duplicate intersection points keeping ones with higher WSEL")
         tempLayer = "intersectLayer"
         expression = """ "Route_ID_1"='Delete' """        
         expression2 = "[Route_ID]"

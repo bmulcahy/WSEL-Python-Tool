@@ -28,7 +28,7 @@ class WSEL_Step_4:
         self.backwater =self.config['backwater']
         self.sr = self.config['sr']        
         env.workspace = self.scratch
-        env.parallelProcessingFactor = "4"
+        #env.parallelProcessingFactor = "4"
         env.overwriteOutput = True
         env.MResolution = 0.0001
         env.MDomain = "0 10000000"

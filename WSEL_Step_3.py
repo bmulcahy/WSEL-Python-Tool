@@ -34,10 +34,7 @@ class WSEL_Step_3:
         tempLayer = "intersectLayer"
         expression = """ "Intersects"='Delete' """
         comb_intersect = stream_intersects
-        compare =[]
-
-        ###TESTING ONLY####
-        #arcpy.AddField_management(comb_intersect,'Del',"TEXT","","",50)
+        compare =[]        
 
         cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Intersects','WSEL', 'XS_Section'])
        
@@ -55,8 +52,7 @@ class WSEL_Step_3:
                 stream_name = strm[0]
                 stream_WSEL = strm[2]                
                 if intersect == stream_name and intersect_stream == stream and intersect_WSEL < stream_WSEL:
-                    print(intersect_stream+": "+str(intersect_WSEL)+" "+stream_name+": "+str(stream_WSEL))
-                    #row.setValue("Del",intersect)
+                    #print(intersect_stream+": "+str(intersect_WSEL)+" "+stream_name+": "+str(stream_WSEL))                    
                     row.setValue("Intersects","Delete")
                     cursor.updateRow(row)        
         del cursor
@@ -85,11 +81,9 @@ class WSEL_Step_3:
             else:
                 error =error+1
                 intersection = {name:intersect_stream}
-                warning.update(intersection)
-                
+                warning.update(intersection)               
         
-        del cursor
-        
+        del cursor       
         
         for strm in compare:
             xs_name= strm[0]+"_xs"
