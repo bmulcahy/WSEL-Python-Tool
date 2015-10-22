@@ -9,7 +9,7 @@ from WSEL_Step_1 import *
 from WSEL_Step_2 import *
 from WSEL_Step_3 import *
 from WSEL_Step_4 import *
-#from WSEL_Step_5 import *
+from WSEL_Step_5 import *
 from arcpy import env
 
 
@@ -709,42 +709,40 @@ def Intersects_delete(setup,job_config,multi,proc):
 
 def Step1(setup,proc,multi,streamJobs):
    if multi == True:          
-      print("Beginning Step 1 using multiprocesser module")
-      for job in streamJobs:
-         result = WSEL_step1(job)
-      #pool=Pool(processes=proc) 
-      #result = pool.map(WSEL_step1,streamJobs)
-      #pool.close()
-      #pool.join()      
+      print("Beginning Step 1")
+      #for job in streamJobs:
+         #result = WSEL_step1(job)
+      pool=Pool(processes=proc) 
+      result = pool.map(WSEL_step1,streamJobs)
+      pool.close()
+      pool.join()      
    else:
-      print("Beginning Step 1 without multiprocesser module")
+      print("Beginning Step 1")
       WSEL_step1(streamJobs[0])
    print("Step 1 completed")
    print("Streams have been configured")
-   print_to_log(setup,"Step 1","Complete")
-   print_to_config(setup,"Step1",True)
+   
 
 def Step2(setup,proc,multi,streamJobs):
    if multi == True:
-      print("Beginning Step 2 using multiprocesser module")   
-      for job in streamJobs:
-         result = WSEL_step2(job)
-      #pool=Pool(processes=proc)      
-      #result = pool.map(WSEL_step2,streamJobs)
-      #pool.close()
-      #pool.join()
+      print("Beginning Step 2")   
+      #for job in streamJobs:
+         #result = WSEL_step2(job)
+      pool=Pool(processes=proc)      
+      result = pool.map(WSEL_step2,streamJobs)
+      pool.close()
+      pool.join()
    else:      
-      print("Beginning Step 2 without multiprocesser module")
+      print("Beginning Step 2")
       WSEL_step2(streamJobs[0])   
    print("Step 2 completed")
-   print_to_log(setup,"Step 2","Complete")
-   print_to_config(setup,"Step2",True)
+   
 
 def Step3(setup,proc,multi,streamJobs):
    error = 0
    warning ={}
    if multi == True:
-      print("Beginning Step 3 using multiprocesser module")
+      print("Beginning Step 3")
       #for job in streamJobs:
          #result = WSEL_step3(job)
          #if result != None:
@@ -753,17 +751,17 @@ def Step3(setup,proc,multi,streamJobs):
       result = pool.map(WSEL_step3,streamJobs)
       pool.close()
       pool.join()
-      print_to_log(setup,"Step 3","Complete")
-      print_to_config(setup,"Step3",True)
+      
+      
       #if result!=None:         
          #for i in result:
             #if i[0] != None:               
                #warning.update(i[0])
    else:      
-      print("Beginning Step 3 without multiprocesser module")
+      print("Beginning Step 3")
       result=WSEL_step3(streamJobs[0])
-      print_to_log(setup,"Step 3","Complete")
-      print_to_config(setup,"Step3",True)
+      
+      
       #if result != None:
          #warning.update(result[0])
    if error >0:
@@ -783,7 +781,7 @@ def Step4(setup,proc,multi,streamJobs):
       #pool.join()
       
    else:      
-      print("Beginning Step 4 without multiprocesser module")
+      print("Beginning Step 4")
       WSEL_step4(streamJobs[0])
    print("Step 4 completed")
    print_to_log(setup,"Step 4","Complete")
@@ -851,12 +849,7 @@ def main(config):
          config['Intersects'] = False
       if 'IntersectsClean' not in config:
          config['IntersectsClean'] = False
-      if 'Step1' not in config:
-         config['Step1'] = False
-      if 'Step2' not in config:
-         config['Step2'] = False
-      if 'Step3' not in config:
-         config['Step3'] = False
+      
       if 'Step4' not in config:
          config['Step4'] = False
       if 'Step5' not in config:
@@ -865,12 +858,12 @@ def main(config):
          config['XSCheck'] = False
       if 'MergeStreams_1' not in config:
          config['MergeStreams_1'] = False
-      if 'MergeStreams_2' not in config:
-         config['MergeStreams_2'] = False
+      
       if 'MergeIntersects_1' not in config:
          config['MergeIntersects_1'] = False
-      if 'MergeIntersects_2' not in config:
-         config['MergeIntersects_2'] = False
+      
+      if 'IntersectsDelete' not in config:
+         config['IntersectsDelete'] = False
 
       if config['OriginalWorkspace']== False:
          OriginalWorkspace(setup)
@@ -907,10 +900,9 @@ def main(config):
          
          list_length = len(stream_list)
          i=0
-         if 'IntersectsDelete' in config and 'IntersectsDelete'!=True:
+         if config['IntersectsDelete'] ==False:
             Intersects_delete(setup,job_config,multi,proc)
-         if 'IntersectsDelete' not in config:
-            Intersects_delete(setup,job_config,multi,proc)
+         
             
          completed_streams =[]
          
@@ -925,13 +917,12 @@ def main(config):
                   loc = 0
                single_config =[{'stream_names':[stream],'config':streamJobs[loc]['config'], 'completed': completed_streams}]                
                Step1(setup,proc,multi,single_config)         
-               MergeStreams(setup,job_config,multi,proc,2)
-               return
+               MergeStreams(setup,job_config,multi,proc,2)               
                Step2(setup,proc,multi,single_config)               
                MergeIntersects(setup,job_config,multi,proc,2)
                Step3(setup,proc,multi,single_config)               
                Step4(setup,proc,multi,single_config)                
-               #print_to_config(setup,streamname,True)
+               print_to_config(setup,streamname,True)
             i=i+1
       else:
          if config['Step4'] == False:

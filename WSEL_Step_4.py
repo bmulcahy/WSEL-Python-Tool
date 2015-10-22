@@ -73,7 +73,7 @@ class WSEL_Step_4:
         route_evt_layer_temp =name+"_evt_lyr"
         route_evt_layer= self.scratch+"\\"+name+"_evt"
         props = "RID POINT MEAS"
-        out_table =self.table_folder+"\\route_loc"
+        out_table =self.table_folder+"\\route_loc.dbf"
 
         route_meas = arcpy.CreateRoutes_lr(rts, rid, out_routes,"LENGTH", "#", "#", "UPPER_LEFT",1,0,"IGNORE", "INDEX")        
         loc_features = arcpy.LocateFeaturesAlongRoutes_lr(pts, route_meas, rid, "0", out_table, props, 'FIRST', 'NO_DISTANCE','NO_ZERO','FIELDS')

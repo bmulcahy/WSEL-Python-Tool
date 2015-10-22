@@ -44,7 +44,7 @@ class WSEL_Step_5:
         #print("Converting elevation points to Tin")        
         tin = self.tin_folder+"\\tin_"+name
         heightfield = "POINT_Z"
-        xs_height ="WSEL"
+        xs_height ="WSEL_REG"
         projection = arcpy.SpatialReference(self.sr)         
         tin_out = arcpy.CreateTin_3d(tin, projection, [[points, heightfield , "Mass_Points"],[xs_lines,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
         #print("Converting Tin to Raster")

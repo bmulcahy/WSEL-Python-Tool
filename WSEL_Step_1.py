@@ -95,7 +95,8 @@ class WSEL_Step_1:
         keep_fields = [f.name for f in arcpy.ListFields(xs_pt)]
         fieldName = "XS_Station"
         fieldName2 = "OBJECTID"                
-        sqlExp = "{0} = {1}".format(fieldName, min_station)    
+        sqlExp = "{0} = {1}".format(fieldName, min_station)
+        sqlExp2 = "'{0}'".format(name) 
         arcpy.MakeFeatureLayer_management(xs_pt, tempLayer)
         arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION", sqlExp)        
         pts = arcpy.FeatureVerticesToPoints_management(stream, self.vertices_dataset+'/'+name+"_endpts","BOTH_ENDS")
@@ -110,9 +111,11 @@ class WSEL_Step_1:
             arcpy.DeleteFeatures_management(temp_pt_Layer)
         arcpy.AddField_management(stream_startend,'XS_Station',"FLOAT")        
         arcpy.CalculateField_management(stream_startend, 'XS_Station', 0, "VB")
-        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("XS_Station","Shape@XY","Shape@Z","Shape@M"))]      
+        arcpy.AddField_management(stream_startend,'Route_ID',"TEXT","","",50)        
+        arcpy.CalculateField_management(stream_startend, 'Route_ID', sqlExp2, "PYTHON")
+        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))]      
         
-        cursor = arcpy.da.InsertCursor(xs_pt, ("XS_Station","Shape@XY","Shape@Z","Shape@M"))
+        cursor = arcpy.da.InsertCursor(xs_pt, ("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))
 
         for row in stream_start:
             cursor.insertRow(row)

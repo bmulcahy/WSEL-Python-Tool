@@ -36,10 +36,10 @@ class WSEL_Step_2:
         streams_intersect = []
         streamLayer="streamsAll"
         tempLayer = "streamLayer"
-        expression = """ "Route_ID" = "Route_ID_1" """
-        keep_fields =['Route_ID', 'Route_ID_1','WSEL', 'POINT_M','Intersects','XS_Section']        
+        
+        keep_fields =['Route_ID','WSEL','Intersects','XS_Section']        
+        expression = """ "Route_ID" = "Intersects" """
         expression2 = "[POINT_Z]"
-
         expression4 = "[Route_ID]"
         expression5 = "[Route_ID_1]"
         expression6 = "[POINT_M]"
@@ -50,10 +50,11 @@ class WSEL_Step_2:
         for stream in stream_array:
             sep = '_'
             name = stream.split(sep, 1)[0]
-            expression3 = """ "Route_ID" <>"""+"'"+name+"'"
-            print("Intersecting "+name)
-            arcpy.MakeFeatureLayer_management(comb_streams, streamLayer)
-            arcpy.SelectLayerByAttribute_management(streamLayer, "NEW_SELECTION",expression3)
+            #expression3 = """ "Route_ID" <>"""+"'"+name+"'"
+            #print("Intersecting "+name)
+            #arcpy.MakeFeatureLayer_management(comb_streams, streamLayer)
+            streamLayer = comb_streams
+            #arcpy.SelectLayerByAttribute_management(streamLayer, "NEW_SELECTION",expression3)
             outFeature = self.streams_intersect_dataset+"/"+name+'_pt_intersect'
             streams_intersect.append(outFeature)
             pt = arcpy.Intersect_analysis([stream,streamLayer], outFeature, "ALL", clusterTolerance, "POINT")
@@ -63,7 +64,7 @@ class WSEL_Step_2:
             arcpy.AddField_management(pt,'XS_Section',"FLOAT",10,3)
             arcpy.CalculateField_management(pt, "WSEL", expression2, "VB")
             arcpy.CalculateField_management(pt, "Intersects", expression4, "VB")
-            #arcpy.CalculateField_management(pt, "Route_ID", expression5, "VB")
+            arcpy.CalculateField_management(pt, "Route_ID", expression5, "VB")
             arcpy.CalculateField_management(pt, "XS_Section", expression6, "VB")
             fields = [f.name for f in arcpy.ListFields(pt) if not f.required and f.name not in keep_fields ]
             arcpy.DeleteField_management(pt, fields)
