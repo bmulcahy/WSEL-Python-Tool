@@ -26,13 +26,13 @@ def Script_setup(check, scriptlocation, r):
    else:
       multiproc = True
       proc = 4
-      main_stream = "NortonCreek"
+      main_stream = "CottonwoodRiver"
       rid_field="StrmName"
       wsel_field = r
       station_field ="Section"
       backwater = True
       projectname = "LowerCottonwood"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\100yr"
       sr="WGS 1984 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
@@ -894,6 +894,7 @@ def main(config):
          print_to_log(setup,"Multiproc",multi)
       if config['CopyWorkspace']==False:
          stream_count,job_config_1=CopyWorkspace(setup)
+      return
       if config['ScratchWorkspace']== False :
          proc, job_config =ScratchWorkspace(setup,stream_count, job_config_1, processors)
       if config['StreamJobs']==False:
@@ -984,6 +985,7 @@ if __name__ == "__main__":
          arcpy.CheckOutExtension("Spatial")
       else:
          raise LicenseError("Spatial Analyst")
+
       runs =["WSE"]
       sl = os.path.abspath(os.path.dirname(sys.argv[0]))
 
