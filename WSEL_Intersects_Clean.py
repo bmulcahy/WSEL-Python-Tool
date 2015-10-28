@@ -1,11 +1,11 @@
 from __future__ import print_function
 import sys, os, re, arcpy
 from arcpy import env
-
+from Safe_Print import Safe_Print
 
 class WSEL_Intersects_Clean:
-    
-    def __init__(self, config):        
+
+    def __init__(self, config):
         self.config = config
 
     def __enter__(self):
@@ -19,6 +19,9 @@ class WSEL_Intersects_Clean:
         self.streams_dataset = self.config['streams_dataset']
         self.vertices_dataset = self.config['vertices_dataset']
         self.multi=self.config['multiproc']
+        self.modelbuilder=self.config['modelbuilder']
+        self.print_config = {'multi': self.multi, 'modelbuilder': self.modelbuilder}
+        self.safe_print = Safe_Print(self.print_config)
         env.workspace = self.scratchgdb
         env.overwriteOutput = True
         env.MResolution = 0.0001
@@ -30,39 +33,36 @@ class WSEL_Intersects_Clean:
     def __exit__(self, type, value, traceback):
         return
 
-    def print_out(self,text):
-        if self.multi == False:
-            print(text)
 
     def remove_duplicate_pts(self, stream_intersects):
-        self.print_out("Removing duplicate intersection points keeping ones with higher WSEL")
+        self.safe_print.print_out("Removing duplicate intersection points keeping ones with higher WSEL")
         tempLayer = "intersectLayer"
-        expression = """ "Route_ID_1"='Delete' """        
+        expression = """ "Route_ID_1"='Delete' """
         expression2 = "[Route_ID]"
         expression3 = "[Route_ID_1]"
         expression4 = "[POINT_M]"
         keep_fields=['SHAPE', 'OBJECTID', 'Route_ID', 'Intersects','WSEL', 'Station','strm_length']
         comb_intersect = stream_intersects
         compare =[]
-        fields = [f.name for f in arcpy.ListFields(comb_intersect)]       
+        fields = [f.name for f in arcpy.ListFields(comb_intersect)]
 
-        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1','strm_length'])        
-        for row in cursor:            
+        cursor = arcpy.SearchCursor(comb_intersect, ['Route_ID','Route_ID_1','strm_length'])
+        for row in cursor:
             compare.append([row.getValue('Route_ID'),row.getValue('Route_ID_1'),row.getValue('strm_length')])
         del row
-        del cursor      
-        
+        del cursor
+
 
         cursor = arcpy.UpdateCursor(comb_intersect,['Route_ID','Route_ID_1','strm_length'])
         for row in cursor:
             intersect = row.getValue('Route_ID_1')
             intersect_stream = row.getValue('Route_ID')
-            intersect_length = int(row.getValue('strm_length'))    
-            
-                       
+            intersect_length = int(row.getValue('strm_length'))
+
+
             for strm in compare:
                 stream = strm[1]
-                stream_name = strm[0]                
+                stream_name = strm[0]
                 stream_length = int(strm[2])
                 if intersect == stream_name and intersect_stream == stream and intersect_length < stream_length:
                     row.setValue("Route_ID_1","Delete")
@@ -82,12 +82,11 @@ class WSEL_Intersects_Clean:
         arcpy.DeleteField_management(comb_intersect, fields)
         return
 
-    
+
 
     def processStream(self):
         self.warnings=[]
         comb_intersect = self.scratchgdb+'\\streams_intersect_all_1'
-        self.remove_duplicate_pts(comb_intersect)       
-        
-        return 
-        
+        self.remove_duplicate_pts(comb_intersect)
+
+        return

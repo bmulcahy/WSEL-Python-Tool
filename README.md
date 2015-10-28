@@ -28,9 +28,17 @@ Change the main_stream to match the name of the main stream of the watershed, al
 
 This script requires both the spatial and 3D analyst licenses.
 
+###### Current Problems initial Data could cause:
+- One stream per folder/stream file. Having more than one stream may cause a loop in the stream order function
+- Cannot have negative Stream Stations/ Sections
+- If a stream does not somehow connect back to the main stream in the watershed it will not be processed
+- Merge Intersects seems to freeze on 100+ streams being processed
 
 ###### TODO:
 - create config process
+- create safe_print function
+- update stream_intersects to be a table instead of shapefile
+  - will require changing step 2 and 3 and the merge intersects function
 - Add option for single stream direct plug in to the script skipping the filename/structure configuration
 - expand on multiprocessor options
 - [x] add toggle for backwater adjustments
