@@ -115,6 +115,7 @@ class WSEL_Step_3:
             comb_intersect = self.scratchgdb+'\\streams_intersect_all_2'
             self.remove_duplicate_pts(comb_intersect)
             warning = self.update_xs(comb_intersect, streams)
-        if warning != 'null':
-            self.warnings.append(warning)
+            #self.update_xs(comb_intersect, streams)
+            if warning != 'null':
+                self.warnings.append(warning)
         return self.warnings

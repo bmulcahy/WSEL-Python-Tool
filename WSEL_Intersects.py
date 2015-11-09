@@ -49,7 +49,7 @@ class WSEL_Intersects:
             streams_intersect.append(outFeature)
             pt = arcpy.Intersect_analysis([stream,comb_streams], outFeature, "ALL", clusterTolerance, "POINT")
             arcpy.AddXY_management(pt)
-            arcpy.AddField_management(pt, fieldName, "DOUBLE")
+            arcpy.AddField_management(pt, fieldName,"FLOAT",10,3)
             arcpy.MakeFeatureLayer_management(pt, tempLayer)
             arcpy.SelectLayerByAttribute_management(tempLayer, "NEW_SELECTION",expression)
 

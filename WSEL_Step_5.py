@@ -30,6 +30,8 @@ class WSEL_Step_5:
         self.multi=self.config['multiproc']
         self.modelbuilder=self.config['modelbuilder']
         self.backwater=self.config['backwater']
+        self.flood_boundary=self.config['flood_boundary']
+        self.wsel_field=self.config['wsel_field']
         self.print_config = {'multi': self.multi, 'modelbuilder': self.modelbuilder}
         self.safe_print = Safe_Print(self.print_config)
         env.scratchWorkspace = self.scratchgdb
@@ -46,7 +48,7 @@ class WSEL_Step_5:
 
     def points_to_tin(self, points, xs_lines, name):
 
-        out_raster = self.output_workspace+name
+        out_raster = self.output_workspace+name+'_'+self.wsel_field
         self.safe_print.print_out("Converting "+name+" elevation points to Tin")
         tin = self.tin_folder+"\\tin_"+name
         heightfield = "POINT_Z"
@@ -60,27 +62,60 @@ class WSEL_Step_5:
     def backwater_correction(self, points, xs_lines, name):
         sqlexp ="{0}={1}".format("Backwater", "'no'")
         sqlexp3="Shape_Area"
-        out_raster = self.output_workspace+name
+        sql_intersect ="{0}={1}".format("Route_ID", "'"+name+"'")
+        sql_raster ="{0}={1}".format("Removed", "'no'")
+        out_raster = self.output_workspace+name+'_'+self.wsel_field
+
+        
         boundary = self.flood_original+"\\"+name+"_flood_boundary"
+
+
+        intersect_name = [r[0] for r in arcpy.da.SearchCursor (self.scratchgdb+'\\streams_intersect_all_2', ["Intersects"],sql_intersect)]
+        avail_intersect = len(intersect_name)
+        print(avail_intersect)
+        if avail_intersect>0:
+            print(intersect_name)
+            intersect_bound =  self.flood_original+"\\"+intersect_name[0]+"_flood_boundary"
+        
+        
         temp_bound = self.scratchgdb+"\\"+name+"_flood_temp"
         flood_bound = self.scratchgdb+"\\"+name+"_boundary"
         dis_bound =self.scratchgdb+"\\"+name+"_flood_dis"
+
+        
         pts_layer = arcpy.MakeFeatureLayer_management (points, "pts")
         xs_layer = arcpy.MakeFeatureLayer_management (xs_lines, "xs")
+        
         arcpy.Near_analysis(pts_layer, xs_layer)
         arcpy.AddJoin_management(pts_layer,"NEAR_FID",xs_layer,"OBJECTID")
-        arcpy.SelectLayerByAttribute_management(xs_layer,"NEW_SELECTION",sqlexp)
-        arcpy.SelectLayerByAttribute_management(pts_layer,"NEW_SELECTION",sqlexp)
+        arcpy.SelectLayerByAttribute_management(xs_layer,"CLEAR_SELECTION",sqlexp)
+        arcpy.SelectLayerByAttribute_management(pts_layer,"CLEAR_SELECTION",sqlexp)
+        #arcpy.SelectLayerByAttribute_management(xs_layer,"NEW_SELECTION",sqlexp)
+        #arcpy.SelectLayerByAttribute_management(pts_layer,"NEW_SELECTION",sqlexp)
+        #if int(arcpy.GetCount_management(xs_layer).getOutput(0)) <= 0:
+            #arcpy.SelectLayerByAttribute_management(xs_layer,"CLEAR_SELECTION",sqlexp)
+            #arcpy.SelectLayerByAttribute_management(pts_layer,"CLEAR_SELECTION",sqlexp)
+            
 
         tin = self.tin_folder+"\\tin_"+name
         heightfield = "POINT_Z"
         xs_height ="WSEL_REG"
         projection = arcpy.SpatialReference(self.sr)
-        tin_out = arcpy.CreateTin_3d(tin, projection, [[pts_layer, heightfield , "Mass_Points"],[xs_layer,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
-        raster = arcpy.TinRaster_3d(tin_out, out_raster, "INT", "LINEAR", "CELLSIZE 3", 1)
-        arcpy.RasterToPolygon_conversion(raster, temp_bound, "NO_SIMPLIFY")
-        arcpy.Dissolve_management(temp_bound,dis_bound,"#","#","SINGLE_PART")
-        arcpy.Clip_analysis(dis_bound,boundary,temp_bound)        
+        #tin_out = arcpy.CreateTin_3d(tin, projection, [[pts_layer, heightfield , "Mass_Points"],[xs_layer,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
+        #raster = arcpy.TinRaster_3d(tin_out, out_raster, "INT", "LINEAR", "CELLSIZE 3", 1)
+        #arcpy.RasterToPolygon_conversion(raster, temp_bound, "NO_SIMPLIFY")
+        #arcpy.Dissolve_management(temp_bound,dis_bound,"#","#","SINGLE_PART")
+        if self.flood_boundary == True and avail_intersect != 0:
+            arcpy.AddField_management(boundary, "Removed", "TEXT",4)
+            arcpy.CalculateField_management(boundary, "Removed", "'no'","PYTHON")
+            arcpy.Erase_analysis(boundary, intersect_bound, "erase1")
+            arcpy.Erase_analysis(intersect_bound, "erase1","erase2")
+            arcpy.CalculateField_management("erase2", "Removed", "'yes'","PYTHON")
+            arcpy.Union_analysis("erase1","erase2",temp_bound)
+        else:            
+            temp_bound = boundary
+            arcpy.AddField_management(temp_bound, "Removed", "TEXT",4)
+            arcpy.CalculateField_management(temp_bound, "Removed", "'no'","PYTHON")
         arcpy.MultipartToSinglepart_management(temp_bound,flood_bound)
         arcpy.AddField_management(flood_bound, "flood_area", "FLOAT",10,3)
         arcpy.CalculateField_management(flood_bound, "flood_area", "float(!SHAPE.AREA!)","PYTHON")
@@ -94,15 +129,20 @@ class WSEL_Step_5:
             sqlexp2 ="{0}<>{1}".format("flood_area", max_area)
             arcpy.MakeFeatureLayer_management (temp_poly, "flood_temp")
             arcpy.SelectLayerByAttribute_management("flood_temp","NEW_SELECTION",sqlexp2)
-            arcpy.CalculateField_management(flood_bound, "flood_check", "'yes'","PYTHON")
+            arcpy.CalculateField_management("flood_temp", "flood_check", "'yes'","PYTHON")
             #if int(arcpy.GetCount_management("flood_temp").getOutput(0)) > 0:
                 #arcpy.DeleteFeatures_management("flood_temp")
         arcpy.Delete_management(temp_bound)
-        arcpy.Delete_management(dis_bound)
+        #arcpy.Delete_management(dis_bound)
         arcpy.Delete_management(flood_bound)
-        self.safe_print.print_out("Clipping "+name+"'s raster to Flood Boundary")
-        outExtractByMask = ExtractByMask(raster, temp_poly)
-        outExtractByMask.save(self.output_workspace+name)        
+        tin_out = arcpy.CreateTin_3d(tin, projection, [[pts_layer, heightfield , "Mass_Points"],[xs_layer,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
+        raster = arcpy.TinRaster_3d(tin_out, out_raster, "FLOAT", "LINEAR", "CELLSIZE 3", 1)
+        if self.flood_boundary == True:
+            self.safe_print.print_out("Clipping "+name+"'s raster to Flood Boundary")
+            arcpy.MakeFeatureLayer_management(temp_poly, "flood_temp")
+            arcpy.SelectLayerByAttribute_management("flood_temp","NEW_SELECTION",sql_raster)
+            outExtractByMask = ExtractByMask(raster, "flood_temp")
+            outExtractByMask.save(self.output_workspace+name+'_'+self.wsel_field)        
         return
     
     def raster_extract(self, raster, name):
@@ -110,7 +150,7 @@ class WSEL_Step_5:
         boundary = self.flood_original+"\\"+name+"_flood_boundary"
         self.safe_print.print_out("Clipping "+name+"'s raster to Flood Boundary")
         outExtractByMask = ExtractByMask(raster, boundary)
-        outExtractByMask.save(self.output_workspace+name)
+        outExtractByMask.save(self.output_workspace+name+'_'+self.wsel_field)
         return
 
     def processStream(self):
@@ -125,6 +165,7 @@ class WSEL_Step_5:
                 self.backwater_correction(stream_vertices ,xs, name)
             else:
                 raster = self.points_to_tin(stream_vertices ,xs, name)
-                self.raster_extract(raster, name)
+                if self.flood_boundary == True:
+                    self.raster_extract(raster, name)
             self.safe_print.print_out("Finished Step 5 for "+name)
         return
