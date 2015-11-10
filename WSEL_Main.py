@@ -34,8 +34,8 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_Step5_Test"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing"
+      projectname = "Cottonwood_run1245"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1245"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
@@ -1031,7 +1031,7 @@ def main(config):
          StreamSetup(setup,proc,streamJobs)
       if config['XSCheck']== False:
          XSCheck(setup,proc,streamJobs)
-      
+      return
       if setup['backwater']== True:
          if config['MergeStreams_1'] == False:
             MergeStreams(setup,streamJobs,proc,1, multi)
@@ -1077,7 +1077,7 @@ def main(config):
       else:
          if config['Step4'] == False:
             Step4(setup,proc,streamJobs)
-      
+      return
       if config['Step5'] == False:
          Step5(setup,proc,streamJobs,multi)
       

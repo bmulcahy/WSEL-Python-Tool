@@ -31,6 +31,7 @@ class WSEL_Step_5:
         self.modelbuilder=self.config['modelbuilder']
         self.backwater=self.config['backwater']
         self.flood_boundary=self.config['flood_boundary']
+        self.flood_dataset=self.config['flood_dataset']
         self.wsel_field=self.config['wsel_field']
         self.print_config = {'multi': self.multi, 'modelbuilder': self.modelbuilder}
         self.safe_print = Safe_Print(self.print_config)
@@ -65,22 +66,21 @@ class WSEL_Step_5:
         sql_intersect ="{0}={1}".format("Route_ID", "'"+name+"'")
         sql_raster ="{0}={1}".format("Removed", "'no'")
         out_raster = self.output_workspace+name+'_'+self.wsel_field
-
-        
+        keep_fields = ["Removed","flood_area","flood_check"]
         boundary = self.flood_original+"\\"+name+"_flood_boundary"
 
 
         intersect_name = [r[0] for r in arcpy.da.SearchCursor (self.scratchgdb+'\\streams_intersect_all_2', ["Intersects"],sql_intersect)]
-        avail_intersect = len(intersect_name)
-        print(avail_intersect)
-        if avail_intersect>0:
-            print(intersect_name)
+        avail_intersect = len(intersect_name)        
+        if avail_intersect>0:            
             intersect_bound =  self.flood_original+"\\"+intersect_name[0]+"_flood_boundary"
         
         
-        temp_bound = self.scratchgdb+"\\"+name+"_flood_temp"
-        flood_bound = self.scratchgdb+"\\"+name+"_boundary"
-        dis_bound =self.scratchgdb+"\\"+name+"_flood_dis"
+        temp_bound = self.flood_dataset+"\\"+name+"_flood_temp"
+        flood_bound = self.flood_dataset+"\\"+name+"_boundary"
+        dis_bound =self.flood_dataset+"\\"+name+"_flood_dis"
+        erase1 =self.flood_dataset+"\\"+name+"_flood_erase1"
+        erase2 =self.flood_dataset+"\\"+name+"_flood_erase2"
 
         
         pts_layer = arcpy.MakeFeatureLayer_management (points, "pts")
@@ -108,12 +108,14 @@ class WSEL_Step_5:
         if self.flood_boundary == True and avail_intersect != 0:
             arcpy.AddField_management(boundary, "Removed", "TEXT",4)
             arcpy.CalculateField_management(boundary, "Removed", "'no'","PYTHON")
-            arcpy.Erase_analysis(boundary, intersect_bound, "erase1")
-            arcpy.Erase_analysis(intersect_bound, "erase1","erase2")
-            arcpy.CalculateField_management("erase2", "Removed", "'yes'","PYTHON")
-            arcpy.Union_analysis("erase1","erase2",temp_bound)
-        else:            
-            temp_bound = boundary
+            arcpy.Erase_analysis(boundary, intersect_bound, erase1)
+            arcpy.Erase_analysis(boundary,erase1,erase2)
+            arcpy.CalculateField_management(erase2, "Removed", "'yes'","PYTHON")
+            arcpy.Merge_management([erase1,erase2],temp_bound)
+            arcpy.Delete_management(erase1)
+            arcpy.Delete_management(erase2)
+        else:
+            arcpy.CopyFeatures_management(boundary,temp_bound)
             arcpy.AddField_management(temp_bound, "Removed", "TEXT",4)
             arcpy.CalculateField_management(temp_bound, "Removed", "'no'","PYTHON")
         arcpy.MultipartToSinglepart_management(temp_bound,flood_bound)
@@ -121,11 +123,11 @@ class WSEL_Step_5:
         arcpy.CalculateField_management(flood_bound, "flood_area", "float(!SHAPE.AREA!)","PYTHON")
         arcpy.AddField_management(flood_bound, "flood_check", "TEXT",4)
         arcpy.CalculateField_management(flood_bound, "flood_check", "'no'","PYTHON")
-        temp_poly =arcpy.CopyFeatures_management(flood_bound,self.scratchgdb+"\\"+name+"_flood_boundary")
+        temp_poly =arcpy.CopyFeatures_management(flood_bound,self.flood_dataset+"\\"+name+"_flood_boundary")
+        
         areaList = [r[0] for r in arcpy.da.SearchCursor (flood_bound, ["flood_area"])]
         if len(areaList)>0:
-            max_area = max(areaList)
-            print(max_area)
+            max_area = max(areaList)            
             sqlexp2 ="{0}<>{1}".format("flood_area", max_area)
             arcpy.MakeFeatureLayer_management (temp_poly, "flood_temp")
             arcpy.SelectLayerByAttribute_management("flood_temp","NEW_SELECTION",sqlexp2)
@@ -135,6 +137,8 @@ class WSEL_Step_5:
         arcpy.Delete_management(temp_bound)
         #arcpy.Delete_management(dis_bound)
         arcpy.Delete_management(flood_bound)
+        fields = [f.name for f in arcpy.ListFields(temp_poly) if not f.required and f.name not in keep_fields ]
+        arcpy.DeleteField_management(temp_poly, fields)
         tin_out = arcpy.CreateTin_3d(tin, projection, [[pts_layer, heightfield , "Mass_Points"],[xs_layer,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
         raster = arcpy.TinRaster_3d(tin_out, out_raster, "FLOAT", "LINEAR", "CELLSIZE 3", 1)
         if self.flood_boundary == True:
@@ -146,7 +150,6 @@ class WSEL_Step_5:
         return
     
     def raster_extract(self, raster, name):
-
         boundary = self.flood_original+"\\"+name+"_flood_boundary"
         self.safe_print.print_out("Clipping "+name+"'s raster to Flood Boundary")
         outExtractByMask = ExtractByMask(raster, boundary)
