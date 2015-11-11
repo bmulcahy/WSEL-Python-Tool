@@ -34,8 +34,8 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_run1245"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1245"
+      projectname = "Cottonwood_run1"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
@@ -660,11 +660,9 @@ def MergeStreams(setup,streamJobs, proc, run,multi):
    print("Merge Streams completed")
    return
 
-def MergeIntersects(setup,streamJobs,proc,run, multi):
+def MergeIntersects(setup,streamJobs,proc,run,multi):
    stream_intersect =[]
-   multiproc  = multi
-   print(multiproc)
-   run=run
+   multiproc= multi   
    print("Merging Stream Intersects")
    if multiproc  == True:
       for p in range(proc):
@@ -888,8 +886,6 @@ def Step3(setup,proc,streamJobs):
       result = pool.map(WSEL_step3,streamJobs)
       pool.close()
       pool.join()
-
-
       #warning.update(result)
    else:
       print("Beginning Step 3")
