@@ -902,16 +902,16 @@ def Step3(setup,proc,streamJobs):
    print("Step 3 completed")
    return
 
-def Step4(setup,proc,streamJobs, multiproc):
+def Step4(setup,proc,streamJobs, multiproc):#still does not like multi processing
    multi = multiproc
    if multi == True:
       print("Beginning Step 4")
-      #for job in streamJobs:
-         #result = WSEL_step4(job)
-      pool=Pool(processes=proc)
-      result = pool.map(WSEL_step4,streamJobs)
-      pool.close()
-      pool.join()
+      for job in streamJobs:
+         result = WSEL_step4(job)
+      #pool=Pool(processes=proc)
+      #result = pool.map(WSEL_step4,streamJobs)
+      #pool.close()
+      #pool.join()
 
    else:
       print("Beginning Step 4")
