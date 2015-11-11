@@ -1073,7 +1073,7 @@ def main(config):
       else:
          if config['Step4'] == False:
             Step4(setup,proc,streamJobs, True)
-      return
+      
       if config['Step5'] == False:
          Step5(setup,proc,streamJobs,multi)
       
