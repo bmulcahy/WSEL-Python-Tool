@@ -160,7 +160,7 @@ class WSEL_Step_5:
         all_streams = self.streams
         self.result =[]
         for streams in all_streams:
-            name = streams
+            name = streams            
             self.safe_print.print_out("Step 5 processing "+name)
             stream_vertices = self.vertices_dataset+'/'+name+"_stream_vertices_feature"
             xs = self.xs_dataset+'/'+name+"_xs"
@@ -170,5 +170,5 @@ class WSEL_Step_5:
                 raster = self.points_to_tin(stream_vertices ,xs, name)
                 if self.flood_boundary == True:
                     self.raster_extract(raster, name)
-            self.safe_print.print_out("Finished Step 5 for "+name)
+                self.safe_print.print_out("Finished Step 5 for "+name)
         return

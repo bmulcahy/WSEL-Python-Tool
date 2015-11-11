@@ -495,8 +495,7 @@ def stream_order(setup,streamJobs):
 
    main_strm =stream_initdict.pop(main)
    stream_dict=merge({main: main_strm},stream_initdict,main_strm, main)
-   stream_order = flatten_stream(stream_dict, list([]))
-   print(json.dumps(stream_order))
+   stream_order = flatten_stream(stream_dict, list([]))   
    print_to_config(setup,"stream_list",stream_order)
    return stream_order
 
@@ -619,8 +618,7 @@ def StreamJobs(setup,config,procs):
 
 def MergeStreams(setup,streamJobs, proc, run,multi):
    print("Merging Streams")
-   multiproc = multi
-   print(multiproc)
+   multiproc = multi   
    stream_list =[]
    if multiproc  == True:
       for p in range(proc):
@@ -922,7 +920,7 @@ def Step5(setup,proc,streamJobs,multi):
    #For some reason tin creation will not work with multiprocessing 
    multiproc =  multi
    if multiproc == True:
-      print("Beginning Step 5 module")
+      print("Processing Streams with Step 5 module")
       for job in streamJobs:
          result = WSEL_step5(job)
       #pool=Pool(processes=proc)
@@ -930,7 +928,7 @@ def Step5(setup,proc,streamJobs,multi):
       #pool.close()
       #pool.join()
    else:
-      print("Beginning Step 5")
+      print("Processing Streams with Step 5 module")
       WSEL_step5(streamJobs[0])
    print("Step 5 completed")
    print_to_log(setup,"Step 5","Complete")
@@ -1005,8 +1003,12 @@ def main(config):
       if 'stream_list' in config:
          stream_list = config['stream_list']         
       else:
-         config['stream_list'] = ''
+         config['stream_list'] = []
          stream_list = config['stream_list']
+      if 'stream_listorder' in config:
+         stream_listorder = config['stream_listorder']         
+      else:         
+         stream_listorder = []
 
       if config['OriginalWorkspace']== False:
          OriginalWorkspace(setup)
@@ -1020,6 +1022,7 @@ def main(config):
          streamJobs = StreamJobs(setup,job_config,proc)
          i=1
          for job in streamJobs:
+            stream_list= stream_list + job['stream_names']
             print_to_log(setup,"Processor "+ str(i),json.dumps(job['stream_names']))
             i=i+1
       
@@ -1037,18 +1040,30 @@ def main(config):
             MergeIntersects(setup,streamJobs,proc, 1, multi)
          if config['IntersectsClean'] == False:
             IntersectsClean(setup,proc,streamJobs)
-         if config['stream_list'] == '':
-            stream_list=stream_order(setup,streamJobs)
-                   
-
+         if stream_listorder == []:
+            stream_listorder=stream_order(setup,streamJobs)
+            config['stream_listorder'] = stream_listorder
+         stream_list =[]#remove
+         for job in streamJobs:#remove
+            stream_list= stream_list + job['stream_names']#remove
+         non_connect_streams =[]
+         for streams in stream_list:
+            if streams not in stream_listorder:
+               non_connect_streams.append(streams)
+                 
+         for conn in non_connect_streams:
+            for job in streamJobs:
+               if conn in job['stream_names']:
+                  job['stream_names'].remove(conn)
+                  print("Removing "+conn +" from stream list")
+         return
          list_length = len(stream_list)
          i=0
          if config['IntersectsDelete'] ==False:
             Intersects_delete(setup,streamJobs,proc)
          
          completed_streams =[]
-
-         for streamname in stream_list:
+         for streamname in stream_listorder:         
             if streamname not in config:
                print("Processing "+streamname+" "+str(i)+" out of "+str(list_length)+" streams completed")
                completed_streams.append(streamname)
@@ -1057,7 +1072,7 @@ def main(config):
                   loc = getConfig(stream,streamJobs,proc)
                else:
                   loc = 0
-               print(multi)
+               
                stream_config = streamJobs[loc]['config']
                single_config =[{'stream_names':[stream],'config':stream_config, 'completed': completed_streams}]
                single_config[0]['config']['multiproc']=False
@@ -1070,6 +1085,9 @@ def main(config):
                
                print_to_config(setup,streamname,True)
             i=i+1
+         
+            
+            
       else:
          if config['Step4'] == False:
             Step4(setup,proc,streamJobs, True)
