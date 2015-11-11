@@ -902,8 +902,8 @@ def Step3(setup,proc,streamJobs):
    print("Step 3 completed")
    return
 
-def Step4(setup,proc,streamJobs):
-   multi = streamJobs[0]['config']['multiproc']
+def Step4(setup,proc,streamJobs, multiproc):
+   multi = multiproc
    if multi == True:
       print("Beginning Step 4")
       #for job in streamJobs:
@@ -1031,7 +1031,7 @@ def main(config):
          StreamSetup(setup,proc,streamJobs)
       if config['XSCheck']== False:
          XSCheck(setup,proc,streamJobs)
-      return
+      
       if setup['backwater']== True:
          if config['MergeStreams_1'] == False:
             MergeStreams(setup,streamJobs,proc,1, multi)
@@ -1070,13 +1070,13 @@ def main(config):
                Step2(setup,proc,single_config)
                MergeIntersects(setup,streamJobs,proc,2,multi)
                Step3(setup,proc,single_config)
-               Step4(setup,proc,single_config)
+               Step4(setup,proc,single_config, False)
                
                print_to_config(setup,streamname,True)
             i=i+1
       else:
          if config['Step4'] == False:
-            Step4(setup,proc,streamJobs)
+            Step4(setup,proc,streamJobs, True)
       return
       if config['Step5'] == False:
          Step5(setup,proc,streamJobs,multi)
