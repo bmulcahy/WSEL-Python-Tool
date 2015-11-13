@@ -140,11 +140,11 @@ class WSEL_Step_5:
         fields = [f.name for f in arcpy.ListFields(temp_poly) if not f.required and f.name not in keep_fields ]
         arcpy.DeleteField_management(temp_poly, fields)
         tin_out = arcpy.CreateTin_3d(tin, projection, [[pts_layer, heightfield , "Mass_Points"],[xs_layer,xs_height,"hardline"]], "CONSTRAINED_DELAUNAY")
-        raster = arcpy.TinRaster_3d(tin_out, out_raster, "FLOAT", "LINEAR", "CELLSIZE 3", 1)
+        raster = arcpy.TinRaster_3d(tin_out, out_raster, "FLOAT", "LINEAR", "CELLSIZE 1.5", 1)
         if self.flood_boundary == True:
             self.safe_print.print_out("Clipping "+name+"'s raster to Flood Boundary")
             arcpy.MakeFeatureLayer_management(temp_poly, "flood_temp")
-            arcpy.SelectLayerByAttribute_management("flood_temp","NEW_SELECTION",sql_raster)
+            #arcpy.SelectLayerByAttribute_management("flood_temp","NEW_SELECTION",sql_raster)#This will clip the boundary being overlapped by the stream it is flowing into
             outExtractByMask = ExtractByMask(raster, "flood_temp")
             outExtractByMask.save(self.output_workspace+name+'_'+self.wsel_field)        
         return

@@ -34,8 +34,8 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_run1"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1"
+      projectname = "Cottonwood_runTEST_small"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\small_test"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
@@ -1042,7 +1042,7 @@ def main(config):
             IntersectsClean(setup,proc,streamJobs)
          if stream_listorder == []:
             stream_listorder=stream_order(setup,streamJobs)
-            config['stream_listorder'] = stream_listorder
+            print_to_config(setup,'stream_listorder',stream_listorder)
          stream_list =[]#remove
          for job in streamJobs:#remove
             stream_list= stream_list + job['stream_names']#remove
@@ -1055,8 +1055,9 @@ def main(config):
             for job in streamJobs:
                if conn in job['stream_names']:
                   job['stream_names'].remove(conn)
+                  print_to_log(setup,"Removed",conn)
                   print("Removing "+conn +" from stream list")
-         return
+         
          list_length = len(stream_list)
          i=0
          if config['IntersectsDelete'] ==False:
