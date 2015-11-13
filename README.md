@@ -36,7 +36,7 @@ This script requires both the spatial and 3D analyst licenses.
 
 ###### TODO:
 - create config process
-- create safe_print function
+- [x] create safe_print function
 - update stream_intersects to be a table instead of shapefile
   - will require changing step 2 and 3 and the merge intersects function
 - Add option for single stream direct plug in to the script skipping the filename/structure configuration
