@@ -34,7 +34,7 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_runTest_small"
+      projectname = "Cottonwood_runTest_small2"
       rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\small_test"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
@@ -132,7 +132,7 @@ def OriginalWorkspace(setup):
    if not arcpy.Exists(flood_original):
       arcpy.CreateFeatureDataset_management(originalgdb, "flood", sr)
    if not arcpy.Exists(comb_rast):
-      arcpy.CreateRasterCatalog_management(combinedgdb, projectname)
+      arcpy.CreateRasterCatalog_management(combinedgdb, projectname,arcpy.SpatialReference(sr))
    else:
       arcpy.DeleteRasterCatalogItems_management(comb_rast)
 
@@ -336,7 +336,7 @@ def ScratchWorkspace(setup, stream_count, job_config, proc):
       if not arcpy.Exists(streams_zm):
          arcpy.CreateFeatureDataset_management(scratchgdb, "streams_zm", sr)
       if not os.path.exists(raster_catalog):
-         arcpy.CreateRasterCatalog_management(finalgdb, projectname)
+         arcpy.CreateRasterCatalog_management(finalgdb, projectname,arcpy.SpatialReference(sr))
       else:
          arcpy.DeleteRasterCatalogItems_management(raster_catalog)
       job_config['config'].append({'flood_boundary':flood_boundary,
@@ -918,10 +918,12 @@ def Step4(setup,proc,streamJobs, multiproc):#still does not like multi processin
 
 def Step5(setup,proc,streamJobs,multi):
    #For some reason tin creation will not work with multiprocessing 
-   multiproc =  multi
+   multiproc =  setup['multiproc']
+   print(multiproc)
    if multiproc == True:
       print("Processing Streams with Step 5 module")
       for job in streamJobs:
+         job['config']['multiproc'] = True         
          result = WSEL_step5(job)
       #pool=Pool(processes=proc)
       #result = pool.map(WSEL_step5,streamJobs)
@@ -1043,9 +1045,7 @@ def main(config):
          if stream_listorder == []:
             stream_listorder=stream_order(setup,streamJobs)
             print_to_config(setup,'stream_listorder',stream_listorder)
-         stream_list =[]#remove
-         for job in streamJobs:#remove
-            stream_list= stream_list + job['stream_names']#remove
+         
          non_connect_streams =[]
          for streams in stream_list:
             if streams not in stream_listorder:
@@ -1082,8 +1082,7 @@ def main(config):
                Step2(setup,proc,single_config)
                MergeIntersects(setup,streamJobs,proc,2,multi)
                Step3(setup,proc,single_config)
-               Step4(setup,proc,single_config, False)
-               
+               Step4(setup,proc,single_config, False)               
                print_to_config(setup,streamname,True)
             i=i+1
          
@@ -1095,6 +1094,7 @@ def main(config):
             Step4(setup,proc,streamJobs, multi)
 
       multi = setup['multiproc']
+      
       if config['Step5'] == False:
          Step5(setup,proc,streamJobs,multi)
       

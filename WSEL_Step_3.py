@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys, os, re, arcpy
 from arcpy import env
-from Safe_Print import Safe_Print
+from safe_print import Safe_Print
 
 class WSEL_Step_3:
 

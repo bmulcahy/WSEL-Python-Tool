@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys, os, re, arcpy, traceback
 from arcpy import env
 from arcpy.sa import *
-from Safe_Print import Safe_Print
+from safe_print import Safe_Print
 ### Created by Brian Mulcahy##
 class WSEL_Step_1:
 
