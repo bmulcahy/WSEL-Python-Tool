@@ -34,7 +34,7 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_runTEST_small"
+      projectname = "Cottonwood_runTest_small"
       rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\small_test"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
@@ -564,7 +564,7 @@ def finalize_data(setup,streamJobs,proc,multi):
       env.overwriteOutput = True
       xs = arcpy.ListFeatureClasses()
       xs_all = arcpy.Merge_management(xs,finalgdb+"\\xs_all"+'_'+wsel_field)
-   xs_fields =['Route_ID','WSEL','Intersects','XS_Section']
+   xs_fields =['Route_ID','XS_Station','WSEL','WSEL_REG','Backwater']
    fields = [f.name for f in arcpy.ListFields(xs_all) if not f.required and f.name not in xs_fields ]
    arcpy.DeleteField_management(xs_all, fields)
    stream_fields =['Route_ID']
@@ -1090,9 +1090,11 @@ def main(config):
             
             
       else:
+         multi = setup['multiproc']
          if config['Step4'] == False:
-            Step4(setup,proc,streamJobs, True)
-      
+            Step4(setup,proc,streamJobs, multi)
+
+      multi = setup['multiproc']
       if config['Step5'] == False:
          Step5(setup,proc,streamJobs,multi)
       
