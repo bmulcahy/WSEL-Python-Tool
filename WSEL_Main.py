@@ -34,8 +34,8 @@ def Script_setup(check, scriptlocation, r):
       wsel_field = r
       station_field ="Section"
       backwater = True
-      projectname = "Cottonwood_runTest_small2"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\small_test"
+      projectname = "Cottonwood_run5"
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run5"
       sr="NAD 1983 UTM Zone 14N"
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
