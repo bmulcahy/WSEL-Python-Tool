@@ -25,18 +25,21 @@ def Script_setup(check, scriptlocation, r):
       sr=arcpy.GetParameterAsText(5)
       modelbuilder = True
    else:
-      multiproc = True ##For large groups you must use this
-      proc = 4
-      modelbuilder = False
-      main_stream = "CottonwoodRiver" #ignored if not doing backwater
-      flood_boundary = True ##If using for polylinezm only flood_boundary is not needed
-      rid_field="StrmName"
+      multiproc = True #For large groups you must use this
+      proc = 4 #Number of processors you want to run on
+      modelbuilder = False       
+      flood_boundary = True #If using for polylinezm only flood_boundary is not needed
+      rid_field="StrmName" #Name of the Route field usually where you find the stream name or reach code
       wsel_field = r
-      station_field ="Section"
+      station_field ="Section" #Name of the station field in the xs files usually Section or ProfileM
       backwater = True
-      projectname = "Cottonwood_run5"
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run5"
-      sr="NAD 1983 UTM Zone 14N"
+      if backwater == True:
+         main_stream = "CottonwoodRiver" #Stream that all streams in the given study area flow into
+      else:
+         main_stream = ''
+      projectname = "Cottonwood_TestingData_noback_flood" #Change to descriptive project name
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing_Data" # directory where initial data can be found
+      sr="NAD 1983 UTM Zone 14N" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
    if not os.path.exists(scratch):
@@ -68,9 +71,7 @@ def Script_setup(check, scriptlocation, r):
            'logfile': logfile,'configfile': configfile,
            'originalgdb': originalgdb,'streams_original': streams_original,
            'flood_original':flood_original,'xs_original':xs_original,
-           'final':final,'comb':comb,
-           'combinedgdb':combinedgdb,'combined_workspace':combined_workspace,
-           'comb_rast':comb_rast}
+           'final':final}
 
    return setup
 
@@ -93,8 +94,8 @@ def OriginalWorkspace(setup):
    main=setup['main']
    scratch = setup['scratch']
    final= setup['final']
-   comb= setup['comb']
-   combinedgdb= setup['combinedgdb']
+   #comb= setup['comb']
+   #combinedgdb= setup['combinedgdb']
    originalgdb= setup['originalgdb']
    xs_original= setup['xs_original']
    streams_original= setup['streams_original']
@@ -103,7 +104,7 @@ def OriginalWorkspace(setup):
    xs_final= setup['xs_final']
    streams_final= setup['streams_final']
    flood_final= setup['flood_final']
-   comb_rast= setup['comb_rast']
+   #comb_rast= setup['comb_rast']
    configfile = setup['configfile']
    sr = setup['sr']
    projectname = setup['Projectname']
@@ -111,10 +112,10 @@ def OriginalWorkspace(setup):
 
    if not os.path.exists(final):
       os.makedirs(final)
-   if not os.path.exists(comb):
-      os.makedirs(comb)
-   if not os.path.exists(combinedgdb):
-      arcpy.CreateFileGDB_management(comb, "Comb.gdb")
+   #if not os.path.exists(comb):
+      #os.makedirs(comb)
+   #if not os.path.exists(combinedgdb):
+      #arcpy.CreateFileGDB_management(comb, "Comb.gdb")
    if not os.path.exists(finalgdb):
       arcpy.CreateFileGDB_management(main, "Final.gdb")
    if not arcpy.Exists(xs_final):
@@ -131,10 +132,10 @@ def OriginalWorkspace(setup):
       arcpy.CreateFeatureDataset_management(originalgdb, "streams", sr)
    if not arcpy.Exists(flood_original):
       arcpy.CreateFeatureDataset_management(originalgdb, "flood", sr)
-   if not arcpy.Exists(comb_rast):
-      arcpy.CreateRasterCatalog_management(combinedgdb, projectname,arcpy.SpatialReference(sr))
-   else:
-      arcpy.DeleteRasterCatalogItems_management(comb_rast)
+   #if not arcpy.Exists(comb_rast):
+      #arcpy.CreateRasterCatalog_management(combinedgdb, projectname,arcpy.SpatialReference(sr))
+   #else:
+      #arcpy.DeleteRasterCatalogItems_management(comb_rast)
 
    env.workspace = originalgdb
    env.overwriteOutput = True
@@ -147,9 +148,7 @@ def OriginalWorkspace(setup):
    print_to_config(setup,"OriginalWorkspace",True)
    return
 
-def CopyWorkspace(setup):
-
-   
+def CopyWorkspace(setup):   
    print("Copying data into workspace")
    xs_original= setup['xs_original']
    streams_original= setup['streams_original']
@@ -202,8 +201,6 @@ def ScratchWorkspace(setup, stream_count, job_config, proc):
    main = setup['main']
    scratch = setup['scratch']
    final= setup['final']
-   comb= setup['comb']
-   combinedgdb= setup['combinedgdb']
    originalgdb= setup['originalgdb']
    xs_original= setup['xs_original']
    streams_original= setup['streams_original']
@@ -212,7 +209,6 @@ def ScratchWorkspace(setup, stream_count, job_config, proc):
    xs_final= setup['xs_final']
    streams_final= setup['streams_final']
    flood_final= setup['flood_final']
-   comb_rast= setup['comb_rast']
    configfile = setup['configfile']
    sr = setup['sr']
    projectname = setup['Projectname']
@@ -247,9 +243,7 @@ def ScratchWorkspace(setup, stream_count, job_config, proc):
          streams_zm = os.path.join(scratchgdb,'streams_zm')
          tin_folder = os.path.join(scratchproc,"Tins")
          if not os.path.exists(scratchproc):
-            os.makedirs(scratchproc)
-         if not os.path.exists(comb):
-            os.makedirs(comb)
+            os.makedirs(scratchproc)         
          if not os.path.exists(tablefolder):
             os.makedirs(tablefolder)
          if not os.path.exists(tin_folder):
@@ -692,31 +686,18 @@ def MergeIntersects(setup,streamJobs,proc,run,multi):
    print("Merge Intersects completed")
    return
 
-def comb_raster(setup,streamJobs,proc,multi):
-   comb_rast =setup['comb_rast']
+def comb_raster(setup,streamJobs):
+   
    final = setup['final']
    projectname = setup['Projectname']
-   wsel_field=setup['wsel_field']
-   multiproc=multi
+   wsel_field=setup['wsel_field']   
    print("Combining rasters")
    raster_loc = streamJobs[0]['config']['output_workspace']
    raster_cat = streamJobs[0]['config']['raster_catalog']
    arcpy.WorkspaceToRasterCatalog_management(raster_loc, raster_cat,"INCLUDE_SUBDIRECTORIES","PROJECT_ONFLY")
    arcpy.RasterCatalogToRasterDataset_management(raster_cat,os.path.join(final,projectname+'_'+wsel_field+".tif"),"",
                                                     "MAXIMUM", "FIRST","", "", "32_BIT_FLOAT")
-   #if multiproc == True:
-      #for p in range(proc):         
-         #raster_loc = streamJobs[p]['config']['output_workspace']
-         #raster_cat = streamJobs[p]['config']['raster_catalog']
-         #arcpy.WorkspaceToRasterCatalog_management(raster_loc, raster_cat,"INCLUDE_SUBDIRECTORIES","PROJECT_ONFLY")
-      #arcpy.RasterCatalogToRasterDataset_management(raster_cat,os.path.join(final,projectname+'_'+wsel_field+".tif"),"",
-                                                    #"MAXIMUM", "FIRST","", "", "32_BIT_FLOAT")
-   #else:
-      #raster_loc = streamJobs[0]['config']['output_workspace']
-      #raster_cat = streamJobs[0]['config']['raster_catalog']
-      #arcpy.WorkspaceToRasterCatalog_management(raster_loc, raster_cat,"INCLUDE_SUBDIRECTORIES","PROJECT_ONFLY")
-      #arcpy.RasterCatalogToRasterDataset_management(raster_cat,os.path.join(final,projectname+'_'+wsel_field+".tif"),"",
-                                                    #"MAXIMUM", "FIRST","", "", "32_BIT_FLOAT")
+
    print_to_config(setup,"comb_raster",True)
    print("All water surface elevations rasters have been created")
 
@@ -884,15 +865,23 @@ def Step3(setup,proc,streamJobs):
       result = pool.map(WSEL_step3,streamJobs)
       pool.close()
       pool.join()
-      #warning.update(result)
+      print(len(result))
+      print(result)
+      if len(result)> 0:
+         error = error +1
+         warning.update(result)
    else:
       print("Beginning Step 3")
       result=WSEL_step3(streamJobs[0])
-      #warning.update(result)
+      print(len(result))
+      print(result)
+      if len(result)>1:
+         error = error +1
+         warning.update(result)
    if error >0:
       warning_string=json.dumps(warning)
       print_to_log(setup,"Stream Intersect Warning",warning_string)
-   print(warning)
+      print(warning)
    print("Step 3 completed")
    return
 
@@ -922,8 +911,7 @@ def Step5(setup,proc,streamJobs,multi):
    print(multiproc)
    if multiproc == True:
       print("Processing Streams with Step 5 module")
-      for job in streamJobs:
-         job['config']['multiproc'] = True         
+      for job in streamJobs:                  
          result = WSEL_step5(job)
       #pool=Pool(processes=proc)
       #result = pool.map(WSEL_step5,streamJobs)
@@ -933,19 +921,23 @@ def Step5(setup,proc,streamJobs,multi):
       print("Processing Streams with Step 5 module")
       WSEL_step5(streamJobs[0])
    print("Step 5 completed")
-   print_to_log(setup,"Step 5","Complete")
-   print_to_config(setup,"Step5",True)
+   if setup['backwater']!= True:
+      print_to_log(setup,"Step 5","Complete")
+      print_to_config(setup,"Step5",True)
    return
-
 
 def main(config):
    setup = config['Setup']
-   logging.basicConfig(level=logging.DEBUG, filename=setup['logfile'], format='%(asctime)s %(message)s')
+   logging.basicConfig(level=logging.DEBUG, filename=setup['logfile'], format='%(asctime)s %(message)s') #Set logging level and location
    try:
       print_to_log(setup,"Start Time", time.strftime("%c"))
 
       multi = setup['multiproc']
+      print_to_log(setup,"Multiproc",multi)
       processors = setup['Proc']
+
+      # The next list of checks are done to insure that certain variables are in the config file.
+      # A config process should be added in order to start and stop from a certain step if needed.
 
       if 'Proc' not in config:
          config['Proc'] = processors
@@ -1014,7 +1006,7 @@ def main(config):
 
       if config['OriginalWorkspace']== False:
          OriginalWorkspace(setup)
-         print_to_log(setup,"Multiproc",multi)
+         
       if config['CopyWorkspace']==False:
          stream_count,job_config_1=CopyWorkspace(setup)
       
@@ -1082,27 +1074,27 @@ def main(config):
                Step2(setup,proc,single_config)
                MergeIntersects(setup,streamJobs,proc,2,multi)
                Step3(setup,proc,single_config)
-               Step4(setup,proc,single_config, False)               
+               Step4(setup,proc,single_config, False)
+               Step5(setup,proc,single_config, False)
                print_to_config(setup,streamname,True)
-            i=i+1
-         
+            i=i+1     
             
             
       else:
-         multi = setup['multiproc']
          if config['Step4'] == False:
             Step4(setup,proc,streamJobs, multi)
+         if config['Step5'] == False:
+            Step5(setup,proc,streamJobs,multi)
 
-      multi = setup['multiproc']
       
-      if config['Step5'] == False:
-         Step5(setup,proc,streamJobs,multi)
+      
+      
       
       
       if config['finalize_data']== False:
          finalize_data(setup,streamJobs,proc,multi)
       if config['comb_raster'] ==False:
-         comb_raster(setup,streamJobs,proc,multi)
+         comb_raster(setup,streamJobs)
 
       print_to_log(setup,"End Time", time.strftime("%c"))
    except:
@@ -1113,8 +1105,9 @@ def main(config):
 class LicenseError(Exception):
    def __init__(self, arg):
       self.msg = arg
-
+#This is the entrance point for the WSEL_REG_Script tool
 if __name__ == "__main__":
+   #Check first to see if correct ArcGIS licenses are available
    try:
       if arcpy.CheckExtension("3D") == "Available":
          print("3D extension available")
@@ -1126,14 +1119,16 @@ if __name__ == "__main__":
          arcpy.CheckOutExtension("Spatial")
       else:
          raise LicenseError("Spatial Analyst")
-
+      #Water Surface Elevation Fields in the given XS shapefiles, for multiple fields just append the field name in runs and
+      #the script will loop through each field
       runs =["WSE"]
-      sl = os.path.abspath(os.path.dirname(sys.argv[0]))
+      
+      sl = os.path.abspath(os.path.dirname(sys.argv[0])) #Base Folder of all outputs, change if needed
 
       for r in runs:
          print("Running script for "+r)
          configfile =''
-         setup = Script_setup(False,sl, r)
+         setup = Script_setup(False,sl, r) # Initial variables of config file returns object
          configfile = setup['configfile']
          if not os.path.exists(configfile):
             config ={'Setup':setup}
