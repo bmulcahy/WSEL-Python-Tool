@@ -28,22 +28,23 @@ def Script_setup(check, scriptlocation, r):
       multiproc = True #For large groups you must use this
       proc = 4 #Number of processors you want to run on
       modelbuilder = False       
-      flood_boundary = True #If using for polylinezm only flood_boundary is not needed
+      flood_boundary = False #If using for polylinezm only flood_boundary is not needed
       rid_field="StrmName" #Name of the Route field usually where you find the stream name or reach code
       wsel_field = r
-      station_field ="Section" #Name of the station field in the xs files usually Section or ProfileM
-      backwater = True
+      station_field ="ProfileM" #Name of the station field in the xs files usually Section or ProfileM
+      backwater = False
       if backwater == True:
          main_stream = "CottonwoodRiver" #Stream that all streams in the given study area flow into
       else:
          main_stream = ''
-      projectname = "Cottonwood_TestingData_noback_flood" #Change to descriptive project name
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing_Data" # directory where initial data can be found
-      sr="NAD 1983 UTM Zone 14N" #Spatial reference used in script can accept either text or file location to a  .prj file
+      projectname = "BigPapio_Stream13" #Change to descriptive project name
+      rootdir = "E:\\Big_Papio_Data\\Redo_papio" # directory where initial data can be found
+      sr="E:\\Big_Papio_Data\\Redo_papio\\floodmap.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
    if not os.path.exists(scratch):
       os.makedirs(scratch)
+   
    configfile = os.path.join(scratch,"config.cfg")
    logfile = os.path.join(scratch,"log.txt")
    originalgdb = os.path.join(main,"Original.gdb")
@@ -55,10 +56,6 @@ def Script_setup(check, scriptlocation, r):
    flood_final = os.path.join(finalgdb,'flood')
    xs_final = os.path.join(finalgdb,'xs')
    final = os.path.join(main,"Output")
-   comb = os.path.join(scratch,"combined_output")
-   combinedgdb = os.path.join(comb,"Comb.gdb")
-   combined_workspace = os.path.join(comb,"Comb.gdb\\")
-   comb_rast = os.path.join(combinedgdb,projectname)
    setup ={'flood_boundary':flood_boundary,'modelbuilder': modelbuilder,
            'main_stream':main_stream,'main': main,
            'finalgdb': finalgdb,'streams_final': streams_final,
@@ -94,8 +91,6 @@ def OriginalWorkspace(setup):
    main=setup['main']
    scratch = setup['scratch']
    final= setup['final']
-   #comb= setup['comb']
-   #combinedgdb= setup['combinedgdb']
    originalgdb= setup['originalgdb']
    xs_original= setup['xs_original']
    streams_original= setup['streams_original']
@@ -104,7 +99,6 @@ def OriginalWorkspace(setup):
    xs_final= setup['xs_final']
    streams_final= setup['streams_final']
    flood_final= setup['flood_final']
-   #comb_rast= setup['comb_rast']
    configfile = setup['configfile']
    sr = setup['sr']
    projectname = setup['Projectname']
@@ -112,10 +106,6 @@ def OriginalWorkspace(setup):
 
    if not os.path.exists(final):
       os.makedirs(final)
-   #if not os.path.exists(comb):
-      #os.makedirs(comb)
-   #if not os.path.exists(combinedgdb):
-      #arcpy.CreateFileGDB_management(comb, "Comb.gdb")
    if not os.path.exists(finalgdb):
       arcpy.CreateFileGDB_management(main, "Final.gdb")
    if not arcpy.Exists(xs_final):
@@ -132,10 +122,6 @@ def OriginalWorkspace(setup):
       arcpy.CreateFeatureDataset_management(originalgdb, "streams", sr)
    if not arcpy.Exists(flood_original):
       arcpy.CreateFeatureDataset_management(originalgdb, "flood", sr)
-   #if not arcpy.Exists(comb_rast):
-      #arcpy.CreateRasterCatalog_management(combinedgdb, projectname,arcpy.SpatialReference(sr))
-   #else:
-      #arcpy.DeleteRasterCatalogItems_management(comb_rast)
 
    env.workspace = originalgdb
    env.overwriteOutput = True
@@ -741,6 +727,7 @@ def StreamSetup(setup,proc,streamJobs):
    multi = streamJobs[0]['config']['multiproc']
    if multi == True:
       print("Beginning Stream Setup using multiprocesser module")
+      print(proc)
       #for job in streamJobs:
          #result = WSEL_StreamSetup(job)
       pool=Pool(processes=proc)
@@ -930,43 +917,49 @@ def main(config):
    setup = config['Setup']
    logging.basicConfig(level=logging.DEBUG, filename=setup['logfile'], format='%(asctime)s %(message)s') #Set logging level and location
    try:
+      
       print_to_log(setup,"Start Time", time.strftime("%c"))
-
       multi = setup['multiproc']
       print_to_log(setup,"Multiproc",multi)
       processors = setup['Proc']
+      
 
       # The next list of checks are done to insure that certain variables are in the config file.
       # A config process should be added in order to start and stop from a certain step if needed.
+      
 
       if 'Proc' not in config:
          config['Proc'] = processors
       else:
          proc = config['Proc']
-
+      
       if 'StreamCount' not in config:
          stream_count = 0
       else:
          stream_count = config['StreamCount']
+      
       if 'JobConfig_1' in config:
          job_config_1 = config['JobConfig_1']
       else:
          config['JobConfig_1'] = ''
-
+      
       if 'JobConfig' in config:
          job_config = config['JobConfig']
       else:
          config['JobConfig'] = ''
-
+      
       if 'StreamJobs' in config:
          streamJobs = config['StreamJobs']
       else:
          config['StreamJobs'] = False
-
+      
       if 'OriginalWorkspace' not in config:
-         config['OriginalWorkspace'] = False
+         config['OriginalWorkspace'] = False  
+         
+         
       if 'CopyWorkspace' not in config:
          config['CopyWorkspace'] = False
+
       if 'ScratchWorkspace' not in config:
          config['ScratchWorkspace'] = False
       if 'StreamSetup' not in config:
@@ -994,11 +987,13 @@ def main(config):
          config['finalize_data'] = False
       if 'comb_raster' not in config:
          config['comb_raster'] = False
+
       if 'stream_list' in config:
          stream_list = config['stream_list']         
       else:
          config['stream_list'] = []
          stream_list = config['stream_list']
+
       if 'stream_listorder' in config:
          stream_listorder = config['stream_listorder']         
       else:         
@@ -1010,15 +1005,18 @@ def main(config):
       if config['CopyWorkspace']==False:
          stream_count,job_config_1=CopyWorkspace(setup)
       
-      if config['ScratchWorkspace']== False :
-         proc, job_config =ScratchWorkspace(setup,stream_count, job_config_1, processors)
+         
+      if config['ScratchWorkspace']== False:
+         proc,job_config =ScratchWorkspace(setup,stream_count, job_config_1, processors)
+
       if config['StreamJobs']==False:
          streamJobs = StreamJobs(setup,job_config,proc)
          i=1
          for job in streamJobs:
             stream_list= stream_list + job['stream_names']
             print_to_log(setup,"Processor "+ str(i),json.dumps(job['stream_names']))
-            i=i+1
+            i=i+1      
+      
       
       if config['StreamSetup']== False:
          StreamSetup(setup,proc,streamJobs)
@@ -1064,8 +1062,7 @@ def main(config):
                if multi != False:
                   loc = getConfig(stream,streamJobs,proc)
                else:
-                  loc = 0
-               
+                  loc = 0               
                stream_config = streamJobs[loc]['config']
                single_config =[{'stream_names':[stream],'config':stream_config, 'completed': completed_streams}]
                single_config[0]['config']['multiproc']=False
@@ -1097,6 +1094,7 @@ def main(config):
          comb_raster(setup,streamJobs)
 
       print_to_log(setup,"End Time", time.strftime("%c"))
+      config_init = config
    except:
       logging.exception(" Error:")
 
@@ -1121,26 +1119,53 @@ if __name__ == "__main__":
          raise LicenseError("Spatial Analyst")
       #Water Surface Elevation Fields in the given XS shapefiles, for multiple fields just append the field name in runs and
       #the script will loop through each field
-      runs =["WSE"]
+      runs =["P001","P006"]
       
       sl = os.path.abspath(os.path.dirname(sys.argv[0])) #Base Folder of all outputs, change if needed
-
+      run = 0
       for r in runs:
+         
          print("Running script for "+r)
          configfile =''
          setup = Script_setup(False,sl, r) # Initial variables of config file returns object
          configfile = setup['configfile']
-         if not os.path.exists(configfile):
-            config ={'Setup':setup}
+         if run == 0:
+            if not os.path.exists(configfile):
+               config ={'Setup':setup}
+            else:
+               config={'Setup': setup}
+               with open(configfile, mode='r') as f:
+                  while 1:
+                     try:
+                        config.update(cPickle.load(f))
+                     except EOFError:
+                        break
          else:
-            config={'Setup': setup}
-            with open(configfile, mode='r') as f:
-               while 1:
-                  try:
-                     config.update(cPickle.load(f))
-                  except EOFError:
-                     break
+            # If not the first run then we need to get non run specific data from the previous configfile
+            cfg_folder = os.path.split(configfile)[0]
+            configfile_init = cfg_folder[:-len(r)]+runs[run-1]+'\config.cfg'
+            
+            
+            if not os.path.exists(configfile_init):
+               config ={'Setup':setup}
+            else:
+               config ={'Setup':setup}
+               config_init={'Setup': setup}
+               with open(configfile_init, mode='r') as f:
+                  while 1:
+                     try:
+                        config_init.update(cPickle.load(f))
+                     except EOFError:
+                        break
+               config.update({'StreamCount': config_init['StreamCount']})
+               config.update({'JobConfig_1': config_init['JobConfig_1']})
+               config.update({'Proc': config_init['Proc']})
+               config.update({'OriginalWorkspace': True})
+               config.update({'CopyWorkspace': True})
+            print(config)
+            
          main(config)
+         run = run+1
          
 
    except LicenseError, arg:
