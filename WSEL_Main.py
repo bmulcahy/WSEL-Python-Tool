@@ -32,12 +32,12 @@ def Script_setup(check, scriptlocation, r):
       rid_field="StrmName" #Name of the Route field usually where you find the stream name or reach code
       wsel_field = r
       station_field ="ProfileM" #Name of the station field in the xs files usually Section or ProfileM
-      backwater = False
+      backwater = False #If you want to correct for backwater
       if backwater == True:
          main_stream = "CottonwoodRiver" #Stream that all streams in the given study area flow into
       else:
          main_stream = ''
-      projectname = "BigPapio_Stream13" #Change to descriptive project name
+      projectname = "BigPapio_Stream132" #Change to descriptive project name
       rootdir = "E:\\Big_Papio_Data\\Redo_papio" # directory where initial data can be found
       sr="E:\\Big_Papio_Data\\Redo_papio\\floodmap.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
@@ -353,6 +353,7 @@ def WSEL_XSCheck(streamJobs):
 def WSEL_StreamSetup(streamJobs):
    config=streamJobs['config']
    stream_names = streamJobs['stream_names']
+   print(stream_names)
    with WSEL_Stream_Setup(config,stream_names) as wsel_StreamSetup:
       result=wsel_StreamSetup.processStream()
       return result
@@ -686,6 +687,7 @@ def comb_raster(setup,streamJobs):
 
    print_to_config(setup,"comb_raster",True)
    print("All water surface elevations rasters have been created")
+   return
 
 def XSCheck(setup,proc,streamJobs):
    warning ={}
@@ -693,18 +695,23 @@ def XSCheck(setup,proc,streamJobs):
    multi = streamJobs[0]['config']['multiproc']
    if multi == True:
       print("Beginning XS Check using multiprocesser module")
-      #for job in streamJobs:
-         #result = WSEL_XSCheck(job)
-         #if result != None:
-            #warning.update(result[0])
-      pool=Pool(processes=proc)
-      result = pool.map(WSEL_XSCheck,streamJobs)
-      pool.close()
-      pool.join()
-      for i in result[0]:
-         if i != None:
-            error = error +1
-            warning.update(i)
+      if proc <= 1:
+         for job in streamJobs:
+            result = WSEL_XSCheck(job)
+            print(len(result))
+            if len(result)> 0:
+               print(result[0])
+               error = error +1
+               warning.update(result[0])
+      else:
+         pool=Pool(processes=proc)
+         result = pool.map(WSEL_XSCheck,streamJobs)
+         pool.close()
+         pool.join()
+         for i in result[0]:
+            if i != None:
+               error = error +1
+               warning.update(i)
 
    else:
       print("Beginning XS Check without multiprocesser module")
@@ -714,10 +721,9 @@ def XSCheck(setup,proc,streamJobs):
          print(result)
          warning.update(result[0])
 
-   print("XS have been checked")
-   print(warning)
+   print("XS have been checked")  
    if error >0:
-      warning_string=json.dumps(warning)
+      warning_string=json.dumps(warning)      
       print_to_log(setup,"XSWarnings",warning_string)
    print_to_log(setup,"XSCheck","Complete")
    print_to_config(setup,"XSCheck",True)
@@ -726,14 +732,15 @@ def XSCheck(setup,proc,streamJobs):
 def StreamSetup(setup,proc,streamJobs):
    multi = streamJobs[0]['config']['multiproc']
    if multi == True:
-      print("Beginning Stream Setup using multiprocesser module")
-      print(proc)
-      #for job in streamJobs:
-         #result = WSEL_StreamSetup(job)
-      pool=Pool(processes=proc)
-      result = pool.map(WSEL_StreamSetup,streamJobs)
-      pool.close()
-      pool.join()
+      print("Beginning Stream Setup using multiprocesser module")      
+      if proc <= 3: #No point in doing multi proc if proc is small
+         for job in streamJobs:
+            result = WSEL_StreamSetup(job)
+      else:
+         pool=Pool(processes=proc)
+         result = pool.map(WSEL_StreamSetup,streamJobs)
+         pool.close()
+         pool.join()
    else:
       print("Beginning Stream Setup without multiprocesser module")
       WSEL_StreamSetup(streamJobs[0])
@@ -751,6 +758,7 @@ def IntersectJob(setup,proc,streamJobs):
       pool=Pool(processes=proc)
       result = pool.map(WSEL_IntersectJob,streamJobs)
       pool.close()
+      pool.terminate()
       pool.join()
    else:
       print("Beginning Intersects without multiprocesser module")
@@ -769,6 +777,7 @@ def IntersectsClean(setup,proc,streamJobs):
       pool=Pool(processes=proc)
       result = pool.map(WSEL_IntersectsClean,streamJobs)
       pool.close()
+      pool.terminate()
       pool.join()
    else:
       print("Beginning Intersects Clean without multiprocesser module")
@@ -813,6 +822,7 @@ def Step1(setup,proc,streamJobs):
       pool=Pool(processes=proc)
       result = pool.map(WSEL_step1,streamJobs)
       pool.close()
+      pool.terminate()
       pool.join()
    else:
       print("Beginning Step 1")
@@ -851,9 +861,7 @@ def Step3(setup,proc,streamJobs):
       pool=Pool(processes=proc)
       result = pool.map(WSEL_step3,streamJobs)
       pool.close()
-      pool.join()
-      print(len(result))
-      print(result)
+      pool.join()      
       if len(result)> 0:
          error = error +1
          warning.update(result)
@@ -881,6 +889,7 @@ def Step4(setup,proc,streamJobs, multiproc):#still does not like multi processin
       #pool=Pool(processes=proc)
       #result = pool.map(WSEL_step4,streamJobs)
       #pool.close()
+      #pool.terminate()
       #pool.join()
 
    else:
@@ -894,8 +903,7 @@ def Step4(setup,proc,streamJobs, multiproc):#still does not like multi processin
 
 def Step5(setup,proc,streamJobs,multi):
    #For some reason tin creation will not work with multiprocessing 
-   multiproc =  setup['multiproc']
-   print(multiproc)
+   multiproc =  setup['multiproc']   
    if multiproc == True:
       print("Processing Streams with Step 5 module")
       for job in streamJobs:                  
@@ -1120,15 +1128,17 @@ if __name__ == "__main__":
       #Water Surface Elevation Fields in the given XS shapefiles, for multiple fields just append the field name in runs and
       #the script will loop through each field
       runs =["P001","P006"]
-      
+      runs_length = len(runs)
       sl = os.path.abspath(os.path.dirname(sys.argv[0])) #Base Folder of all outputs, change if needed
       run = 0
       for r in runs:
          
          print("Running script for "+r)
          configfile =''
-         setup = Script_setup(False,sl, r) # Initial variables of config file returns object
+         setup = Script_setup(False,sl,r) # Initial variables of config file returns object
          configfile = setup['configfile']
+         if runs_length>1: #right now multiple scenarios can not run when multiproc == true
+            setup.update({'multiproc': False})
          if run == 0:
             if not os.path.exists(configfile):
                config ={'Setup':setup}
@@ -1143,12 +1153,9 @@ if __name__ == "__main__":
          else:
             # If not the first run then we need to get non run specific data from the previous configfile
             cfg_folder = os.path.split(configfile)[0]
-            configfile_init = cfg_folder[:-len(r)]+runs[run-1]+'\config.cfg'
+            configfile_init = cfg_folder[:-len(r)]+runs[run-1]+'\config.cfg'           
             
-            
-            if not os.path.exists(configfile_init):
-               config ={'Setup':setup}
-            else:
+            if not os.path.exists(configfile):
                config ={'Setup':setup}
                config_init={'Setup': setup}
                with open(configfile_init, mode='r') as f:
@@ -1158,11 +1165,25 @@ if __name__ == "__main__":
                      except EOFError:
                         break
                config.update({'StreamCount': config_init['StreamCount']})
+               print_to_config(config['Setup'], 'StreamCount',config_init['StreamCount'])
                config.update({'JobConfig_1': config_init['JobConfig_1']})
+               print_to_config(config['Setup'], 'JobConfig_1',config_init['JobConfig_1'])
                config.update({'Proc': config_init['Proc']})
+               print_to_config(config['Setup'], 'Proc',config_init['Proc'])
                config.update({'OriginalWorkspace': True})
+               print_to_config(config['Setup'], 'OriginalWorkspace',True)
                config.update({'CopyWorkspace': True})
-            print(config)
+               print_to_config(config['Setup'],'CopyWorkspace',True)
+            else:
+               config ={'Setup':setup}
+               with open(configfile, mode='r') as f:
+                  while 1:
+                     try:
+                        config.update(cPickle.load(f))
+                     except EOFError:
+                        break
+               
+            
             
          main(config)
          run = run+1

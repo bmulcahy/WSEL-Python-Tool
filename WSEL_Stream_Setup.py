@@ -17,7 +17,7 @@ class WSEL_Stream_Setup:
         self.rid_field = self.config['rid_field']
         self.multi=self.config['multiproc']
         self.modelbuilder=self.config['modelbuilder']
-        self.print_config = {'multi': False, 'modelbuilder': self.modelbuilder}
+        self.print_config = {'multi': self.multi, 'modelbuilder': self.modelbuilder}
         self.safe_print = Safe_Print(self.print_config)
         env.workspace = self.scratchgdb
         env.overwriteOutput = True
