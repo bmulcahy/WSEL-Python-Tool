@@ -3,7 +3,12 @@ import sys, os, re, arcpy, traceback
 from arcpy import env
 from arcpy.sa import *
 from safe_print import Safe_Print
-
+######Created By Brian Mulcahy##########
+#Step 5 will create rasters based off the given stream's xs and stream vertices
+#If user corrected for backwater and was given initial flood polygons then the script will add fields based on
+#If the current stream's flood polygon interacts with the stream it is intersecting's flood polygon
+#and if the cross-sections are marked as corrected for backwater.
+#this information should be used to redelineate the flood boundary
 class WSEL_Step_5:
 
     def __init__(self, config, streams):

@@ -28,18 +28,18 @@ def Script_setup(check, scriptlocation, r):
       multiproc = True #For large groups you must use this
       proc = 4 #Number of processors you want to run on
       modelbuilder = False       
-      flood_boundary = False #If using for polylinezm only flood_boundary is not needed
+      flood_boundary = True #If using for polylinezm only flood_boundary is not needed
       rid_field="StrmName" #Name of the Route field usually where you find the stream name or reach code
       wsel_field = r
-      station_field ="ProfileM" #Name of the station field in the xs files usually Section or ProfileM
-      backwater = False #If you want to correct for backwater
+      station_field ="Section" #Name of the station field in the xs files usually Section or ProfileM
+      backwater = True #If you want to correct for backwater
       if backwater == True:
          main_stream = "CottonwoodRiver" #Stream that all streams in the given study area flow into
       else:
          main_stream = ''
-      projectname = "BigPapio_Stream132" #Change to descriptive project name
-      rootdir = "E:\\Big_Papio_Data\\Redo_papio" # directory where initial data can be found
-      sr="E:\\Big_Papio_Data\\Redo_papio\\floodmap.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
+      projectname = "Cottonwood_run1" #Change to descriptive project name
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1" # directory where initial data can be found
+      sr="C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1\\CottonwoodRiver\\CottonwoodRiver.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
    if not os.path.exists(scratch):
@@ -72,13 +72,14 @@ def Script_setup(check, scriptlocation, r):
 
    return setup
 
-
-def print_to_log(setup, param, data):
+#print_to_log print to log file in plain text format 
+def print_to_log(setup, param, data):   
    logfile = setup['logfile']
    with open(logfile, "ab+") as text_file:
       print("{} = {}".format(param,data), end='\n',file=text_file)
    return
 
+#print_to_config prints out to config file which will be loading before each run cfg file is not readable unless by python
 def print_to_config(setup, param, data):
    configfile = setup['configfile']
    topickle = {param: data}
@@ -86,6 +87,7 @@ def print_to_config(setup, param, data):
       cPickle.dump(topickle,text_file)
    return
 
+#OriginalWorkspace creates the original and final gdb that can be shared among processes and scenarios
 def OriginalWorkspace(setup):
    print("Creating workspace")
    main=setup['main']
@@ -134,6 +136,7 @@ def OriginalWorkspace(setup):
    print_to_config(setup,"OriginalWorkspace",True)
    return
 
+#Copys all the streams found in the root data folder that match the file directory and naming conventions outlined below
 def CopyWorkspace(setup):   
    print("Copying data into workspace")
    xs_original= setup['xs_original']
@@ -183,6 +186,7 @@ def CopyWorkspace(setup):
    print_to_config(setup,"JobConfig_1",job_config)
    return (stream_count,job_config)
 
+#Creates workspace for each processor
 def ScratchWorkspace(setup, stream_count, job_config, proc):
    main = setup['main']
    scratch = setup['scratch']
@@ -452,6 +456,7 @@ def flatten_stream(stream_dict, stream_list):
                new_Streamlist.append(values[i])
    return stream_list
 
+#creates a list of streams orgininating from the main stream
 def stream_order(setup,streamJobs):
    print("Creating list of streams for processing order")
    stream_dict = {}
@@ -480,11 +485,13 @@ def stream_order(setup,streamJobs):
    print_to_config(setup,"stream_list",stream_order)
    return stream_order
 
+#returns config file for specific stream name
 def getConfig(stream,streamJobs,procs):
    for i in range(0, procs):
       if stream in streamJobs[i]['stream_names']:
          return i
 
+#cleans up and moves stream data to final gdb
 def finalize_data(setup,streamJobs,proc,multi):
    multiproc = multi
    xs_final=setup['xs_final']
@@ -555,6 +562,7 @@ def finalize_data(setup,streamJobs,proc,multi):
    print("Data moved to Final Geodatabase")
    return
 
+#Seperates streams by the number of processors and attaches the correct config file to each
 def StreamJobs(setup,config,procs):
    
    multi = setup['multiproc']
@@ -596,7 +604,7 @@ def StreamJobs(setup,config,procs):
    print_to_config(setup,"StreamJobs",jobsList)
    return jobsList
 
-
+#merges all the streams from each individual workspace and the overall workspace
 def MergeStreams(setup,streamJobs, proc, run,multi):
    print("Merging Streams")
    multiproc = multi   
@@ -639,6 +647,7 @@ def MergeStreams(setup,streamJobs, proc, run,multi):
    print("Merge Streams completed")
    return
 
+#does the same as mergestreams but for intersects file
 def MergeIntersects(setup,streamJobs,proc,run,multi):
    stream_intersect =[]
    multiproc= multi   
@@ -648,8 +657,7 @@ def MergeIntersects(setup,streamJobs,proc,run,multi):
          stream_loc =streamJobs[p]['config']['streams_intersect_dataset']
          scratchgdb_loc = streamJobs[p]['config']['scratchgdb']
          env.workspace = stream_loc
-         streams = arcpy.ListFeatureClasses()
-         print(str(len(streams)))
+         streams = arcpy.ListFeatureClasses()         
          if len(streams)>0:
             env.workspace = scratchgdb_loc
             local_streams = arcpy.Merge_management(streams, "local_streams_intersect_all_"+str(run))
@@ -867,9 +875,7 @@ def Step3(setup,proc,streamJobs):
          warning.update(result)
    else:
       print("Beginning Step 3")
-      result=WSEL_step3(streamJobs[0])
-      print(len(result))
-      print(result)
+      result=WSEL_step3(streamJobs[0])      
       if len(result)>1:
          error = error +1
          warning.update(result)
@@ -1127,7 +1133,7 @@ if __name__ == "__main__":
          raise LicenseError("Spatial Analyst")
       #Water Surface Elevation Fields in the given XS shapefiles, for multiple fields just append the field name in runs and
       #the script will loop through each field
-      runs =["P001","P006"]
+      runs =["WSE"]
       runs_length = len(runs)
       sl = os.path.abspath(os.path.dirname(sys.argv[0])) #Base Folder of all outputs, change if needed
       run = 0

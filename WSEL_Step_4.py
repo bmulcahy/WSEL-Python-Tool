@@ -3,7 +3,16 @@ import sys, os, re, arcpy, traceback
 from arcpy import env
 from arcpy.sa import *
 from safe_print import Safe_Print
-### Created by Brian Mulcahy##
+### Created by Brian Mulcahy ##
+# Step 4 creates a polyline-zm from the given streamlines and cross-sections
+# It first creates a polyline-zm where the m value is the WSEL
+# it then moves the m value to the z value by doing a 3D by attribute process on the point vertices
+# the pt vertices are then turned back into a line and spatially joined back with the original stream line
+# to perserve its' original attributes. Now with the newly create polyline-m stream-line when then use this as
+# input into the route creation function the same as before but this time using the ProfileM/Section as the value.
+# In order to insure that interpolation perfers correctly and that it does not interpolate below 0 on the streamline
+# we manually create a zero station that is appended to the beginning of the stream vertices pt file
+# 
 class WSEL_Step_4:
 
     def __init__(self, config, streams):
@@ -44,6 +53,7 @@ class WSEL_Step_4:
     def __exit__(self, type, value, traceback):
         return
 
+    #Gets intersection between stream's centerline and the stream's xs
     def get_intersection(self, stream, xs, name):
         self.safe_print.print_out("Getting Intersection between "+name+"'s Stream and XS files")
         inFeatures = [stream, xs]
@@ -54,6 +64,7 @@ class WSEL_Step_4:
         arcpy.Delete_management(pt)
         return self.feature
 
+    #Creates zm attributes on the stream centerline using linear referencing tools
     def add_routes(self,stream,xs_pt,name,status):
 
         rid = "Route_ID"
@@ -65,25 +76,27 @@ class WSEL_Step_4:
         if status == 1:
             self.safe_print.print_out("Adding M-values to Polyline ZM")
             mfield ="XS_Station"
-            #need to add 0 station at beginning of line if there is none because I am a nice guy
-            stationList = [r[0] for r in arcpy.da.SearchCursor (xs_pt, [mfield])]
-            min_station = min(stationList)
+            #need to add 0 station at beginning of line if there is none, other wise the tool may encounter a boundary error with
+            #a m-value being less than 0
+            stationList = [r[0] for r in arcpy.da.SearchCursor (xs_pt, [mfield])]#gives me a list of all the stations/profilem
+            min_station = min(stationList)# gives me the minimum station value(should be 0.01)
             if min_station > 0:
                 self.safe_print.print_out("Creating zero station before processing")
                 pts = self.add_zero_station(stream, xs_pt,min_station,name)
 
-        out_fc = self.routes_dataset+"/"+name+"_stream_routes"
+        out_fc = self.routes_dataset+"/"+name+"_stream_routes" 
         rts = stream
-        out_routes = self.routes_dataset+"/stream_measures"
+        out_routes = self.routes_dataset+"\\stream_measures"
         route_evt_layer_temp =name+"_evt_lyr"
         route_evt_layer= self.scratch+"\\"+name+"_evt"
         props = "RID POINT MEAS"
         out_table =self.table_folder+"\\route_loc.dbf"
 
-        route_meas = arcpy.CreateRoutes_lr(rts, rid, out_routes,"LENGTH", "#", "#", "UPPER_LEFT",1,0,"IGNORE", "INDEX")
-        loc_features = arcpy.LocateFeaturesAlongRoutes_lr(pts, route_meas, rid, "0", out_table, props, 'FIRST', 'NO_DISTANCE','NO_ZERO','FIELDS')
-        evt_lyr = arcpy.MakeRouteEventLayer_lr(route_meas, rid, loc_features, props, route_evt_layer_temp, "#",  "NO_ERROR_FIELD",  "NO_ANGLE_FIELD","NORMAL","ANGLE", "LEFT", "POINT")
-        lyr = arcpy.SaveToLayerFile_management(evt_lyr, route_evt_layer, "RELATIVE")
+        route_meas = arcpy.CreateRoutes_lr(rts, rid, out_routes,"LENGTH", "#", "#", "UPPER_LEFT",1,0,"IGNORE", "INDEX")#creates an m field based on the length of the streamline
+        loc_features = arcpy.LocateFeaturesAlongRoutes_lr(pts, route_meas, rid, "0", out_table, props, 'FIRST', 'NO_DISTANCE','NO_ZERO','FIELDS')#finds the points along the streamline based of the m-field found in previous process
+        evt_lyr = arcpy.MakeRouteEventLayer_lr(route_meas, rid, loc_features, props, route_evt_layer_temp, "#",  "NO_ERROR_FIELD",  "NO_ANGLE_FIELD","NORMAL","ANGLE", "LEFT", "POINT")#creates a layer based of the route table from previous process
+        lyr = arcpy.SaveToLayerFile_management(evt_lyr, route_evt_layer, "RELATIVE")#may or may not need to save layer to disc. I only did this when I was trying to use parrallel processing
+        #depending on which time the process is called either the WSEL or Station field is used
         if status == 0:
             routes = arcpy.CalibrateRoutes_lr (route_meas, rid, lyr, rid, mfield, out_fc,"MEASURES","0","BETWEEN","BEFORE","AFTER","IGNORE","KEEP","INDEX")
         else:
