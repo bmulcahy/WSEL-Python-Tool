@@ -38,8 +38,8 @@ def Script_setup(check, scriptlocation, r):
       else:
          main_stream = ''
       projectname = "Cottonwood_run1" #Change to descriptive project name
-      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1" # directory where initial data can be found
-      sr="C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\run1\\CottonwoodRiver\\CottonwoodRiver.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
+      rootdir = "E:\\Lower CottonwoodRiver\\Data\\run1" # directory where initial data can be found
+      sr="E:\\Lower CottonwoodRiver\\Data\\run1\\CottonwoodRiver\\CottonwoodRiver.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)
    if not os.path.exists(scratch):
