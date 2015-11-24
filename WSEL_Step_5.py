@@ -41,7 +41,7 @@ class WSEL_Step_5:
         self.print_config = {'multi': self.multi, 'modelbuilder': self.modelbuilder}
         self.safe_print = Safe_Print(self.print_config)
         env.scratchWorkspace = self.scratchgdb
-        env.parallelProcessingFactor = "4"
+        #env.parallelProcessingFactor = "4"
         env.overwriteOutput = True
         env.MResolution = 0.0001
         env.MDomain = "0 10000000"
