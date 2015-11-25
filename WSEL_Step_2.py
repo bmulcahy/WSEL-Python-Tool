@@ -34,7 +34,8 @@ class WSEL_Step_2:
     def __exit__(self, type, value, traceback):
         return self
 
-
+    #Intersects stream with completed streams
+    #may want to put cluster tolerance to 0
     def get_intersect_all(self,comb_streams,name):
         self.safe_print.print_out("Intersecting all streams")
         env.workspace = self.routes_dataset        

@@ -4,6 +4,7 @@ from arcpy import env
 from arcpy.sa import *
 from safe_print import Safe_Print
 ### Created by Brian Mulcahy##
+#See Step 4 documentation#
 class WSEL_Step_1:
 
     def __init__(self, config, streams):

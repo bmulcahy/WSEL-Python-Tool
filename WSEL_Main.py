@@ -1049,7 +1049,7 @@ def main(config):
          if stream_listorder == []:
             stream_listorder=stream_order(setup,streamJobs)
             print_to_config(setup,'stream_listorder',stream_listorder)
-         
+         print(stream_list)
          non_connect_streams =[]
          for streams in stream_list:
             if streams not in stream_listorder:

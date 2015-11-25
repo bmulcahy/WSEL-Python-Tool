@@ -69,7 +69,7 @@ class WSEL_Step_3:
             arcpy.DeleteFeatures_management(tempLayer)
 
         return
-
+    #Will update xs with the backwater WSEL found by previous processes intersection
     def update_xs(self, intersect_fc, xs_name):
         self.safe_print.print_out("Updating All XS's with backwater WSEL")
         warning ={}
