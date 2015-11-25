@@ -169,6 +169,8 @@ class WSEL_Step_1:
             arcpy.DeleteField_management(updated_stream, fields)
             routes = self.add_routes(updated_stream,xs_intersect_pt, name, 1)
             streampt = self.vertices_to_pts(routes, name+'_stream')
-            streamxy = arcpy.AddXY_management(streampt)            
-            arcpy.DeleteField_management(routes, fields)
+            streamxy = arcpy.AddXY_management(streampt)
+            streamline = arcpy.PointsToLine_management(streamxy, self.streams_zm+'/'+ name+"_line_zm")
+            updated_stream = arcpy.SpatialJoin_analysis(streamline, stream, self.routes_dataset+"/"+name+"_stream_routes")
+            arcpy.DeleteField_management(updated_stream, fields)
         return

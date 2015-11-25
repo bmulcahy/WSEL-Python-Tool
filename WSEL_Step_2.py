@@ -51,7 +51,7 @@ class WSEL_Step_2:
 
         
         stream = self.routes_dataset +'\\'+name+'_stream_routes'
-        clusterTolerance = 0.01        
+        clusterTolerance = 0        
         self.safe_print.print_out("Intersecting "+name)              
         outFeature = self.streams_intersect_dataset+"/"+name+'_pt_intersect'        
         pt = arcpy.Intersect_analysis([comb_streams,stream], outFeature, "ALL", clusterTolerance, "POINT")

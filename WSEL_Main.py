@@ -37,7 +37,7 @@ def Script_setup(check, scriptlocation, r):
          main_stream = "BloodyCreek" #Stream that all streams in the given study area flow into
       else:
          main_stream = ''
-      projectname = "BC2" #Change to descriptive project name
+      projectname = "BC" #Change to descriptive project name
       rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing" # directory where initial data can be found
       sr="E:\\Lower CottonwoodRiver\\Data\\run1\\CottonwoodRiver\\CottonwoodRiver.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
@@ -1049,7 +1049,7 @@ def main(config):
          if stream_listorder == []:
             stream_listorder=stream_order(setup,streamJobs)
             print_to_config(setup,'stream_listorder',stream_listorder)
-         print(stream_list)
+         
          non_connect_streams =[]
          for streams in stream_list:
             if streams not in stream_listorder:
