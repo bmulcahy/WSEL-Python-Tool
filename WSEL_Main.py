@@ -34,11 +34,11 @@ def Script_setup(check, scriptlocation, r):
       station_field ="Section" #Name of the station field in the xs files usually Section or ProfileM
       backwater = True #If you want to correct for backwater
       if backwater == True:
-         main_stream = "CottonwoodRiver" #Stream that all streams in the given study area flow into
+         main_stream = "BloodyCreek" #Stream that all streams in the given study area flow into
       else:
          main_stream = ''
-      projectname = "Cottonwood_run1" #Change to descriptive project name
-      rootdir = "E:\\Lower CottonwoodRiver\\Data\\run1" # directory where initial data can be found
+      projectname = "BC2" #Change to descriptive project name
+      rootdir = "C:\\Users\\bmulcahy\\External\\Projects\\WSEL-Python-Tool\\data\\Testing" # directory where initial data can be found
       sr="E:\\Lower CottonwoodRiver\\Data\\run1\\CottonwoodRiver\\CottonwoodRiver.prj" #Spatial reference used in script can accept either text or file location to a  .prj file
    main =os.path.join(scriptlocation,"output\\"+projectname)
    scratch = os.path.join(main,wsel_field)

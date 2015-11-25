@@ -27,6 +27,11 @@ Change the main_stream to match the name of the main stream of the watershed, al
 
 
 This script requires both the spatial and 3D analyst licenses.
+###### Summary Explanation of script components:
+- WSEL_main.py
+  - Entrance point of entire process
+  - Run specific variables to Change
+    -  In __main__ "runs" are the WSEL fields to be processed by the script
 
 ###### Current Problems initial Data could cause:
 - One stream per folder/stream file. Having more than one stream may cause a loop in the stream order function
@@ -35,6 +40,8 @@ This script requires both the spatial and 3D analyst licenses.
 - Merge Intersects seems to freeze on 100+ streams being processed
 
 ###### TODO:
+- Fix 0 and 0.001 station reporting wrong z values.
+  - Move adding z-station to when WSEL and create xs-pt at the start of the stream line attributed with the smallest WSEL
 - create config process
 - [x] create safe_print function
 - update stream_intersects to be a table instead of shapefile

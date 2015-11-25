@@ -61,16 +61,22 @@ class WSEL_Step_1:
         if status == 0:
             self.safe_print.print_out("Adding Z-values to Polyline ZM")
             mfield="WSEL"
-            pts = xs_pt
+            #need to add 0 station at beginning of line becuase the beginning of the stream line needs to match exactly
+            stationList = [r[0] for r in arcpy.da.SearchCursor (xs_pt, ["XS_Station"])]#gives me a list of all the stations/profilem
+            min_station = min(stationList)# gives me the minimum xs value(should be 0.01)
+            if min_station > 0:
+                self.safe_print.print_out("Creating zero station before processing")
+                pts = self.add_zero_station(stream, xs_pt,min_station,name)
         if status == 1:
             self.safe_print.print_out("Adding M-values to Polyline ZM")
-            mfield ="XS_Station"
-            #need to add 0 station at beginning of line becuase the beginning of the stream line needs to match exactly
+            mfield ="XS_Station"            
             stationList = [r[0] for r in arcpy.da.SearchCursor (xs_pt, [mfield])]
             min_station = min(stationList)
             if min_station > 0:
                 self.safe_print.print_out("Creating zero station before processing")
                 pts = self.add_zero_station(stream, xs_pt,min_station,name)
+            else:
+                pts = xs_pt
 
         out_fc = self.routes_dataset+"/"+name+"_stream_routes"
         rts = stream
@@ -109,19 +115,21 @@ class WSEL_Step_1:
         stream_startend= arcpy.FeatureToPoint_management(pts,self.vertices_dataset+'/'+ name+"_endpts_feature","CENTROID")
         arcpy.Delete_management(pts)
         arcpy.Near_analysis(tempLayer, stream_startend)
-        start_oid =[r[0] for r in arcpy.da.SearchCursor (xs_pt,("NEAR_FID"),where_clause=sqlExp)][0]
-        sqlExp3 = "{0} <> {1}".format(fieldName2, start_oid)
+        start_oid =[r for r in arcpy.da.SearchCursor (xs_pt,("WSEL","NEAR_FID"),where_clause=sqlExp)][0]        
+        sqlExp3 = "{0} <> {1}".format(fieldName2, start_oid[1])
         arcpy.MakeFeatureLayer_management(stream_startend, temp_pt_Layer)
         arcpy.SelectLayerByAttribute_management(temp_pt_Layer, "NEW_SELECTION", sqlExp3)
         if int(arcpy.GetCount_management(temp_pt_Layer).getOutput(0)) > 0:
             arcpy.DeleteFeatures_management(temp_pt_Layer)
         arcpy.AddField_management(stream_startend,'XS_Station',"FLOAT")
         arcpy.CalculateField_management(stream_startend, 'XS_Station', 0, "VB")
+        arcpy.AddField_management(stream_startend,'WSEL',"FLOAT")
+        arcpy.CalculateField_management(stream_startend, 'WSEL', start_oid[0], "VB")
         arcpy.AddField_management(stream_startend,'Route_ID',"TEXT","","",50)
         arcpy.CalculateField_management(stream_startend, 'Route_ID', sqlExp2, "PYTHON")
-        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))]
+        stream_start =[r for r in arcpy.da.SearchCursor (stream_startend,("Route_ID","WSEL","XS_Station","Shape@XY"))]
 
-        cursor = arcpy.da.InsertCursor(xs_pt, ("Route_ID","XS_Station","Shape@XY","Shape@Z","Shape@M"))
+        cursor = arcpy.da.InsertCursor(xs_pt, ("Route_ID","WSEL","XS_Station","Shape@XY"))
 
         for row in stream_start:
             cursor.insertRow(row)
